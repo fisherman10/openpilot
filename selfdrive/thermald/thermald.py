@@ -100,9 +100,9 @@ def set_eon_fan(val):
 
 
 # temp thresholds to control fan speed - high hysteresis
-_TEMP_THRS_H = [50., 65., 80., 10000]
+_TEMP_THRS_H = [45., 60., 70., 10000]
 # temp thresholds to control fan speed - low hysteresis
-_TEMP_THRS_L = [42.5, 57.5, 72.5, 10000]
+_TEMP_THRS_L = [40.5, 50.5, 65.5, 10000]
 # fan speed options
 _FAN_SPEEDS = [0, 16384, 32768, 65535]
 
@@ -125,7 +125,7 @@ def handle_fan_eon(controller, max_cpu_temp, fan_speed, ignition):
 
 def handle_fan_uno(controller, max_cpu_temp, fan_speed, ignition):
   mult = float(Params().get("FanPwmOverride"))
-  new_speed = int(interp(max_cpu_temp, [50.0, 70.0], [0, 90 * mult/100]))
+  new_speed = int(interp(max_cpu_temp, [40.0, 65.0], [0, 90 * mult/100]))
 
   if not ignition:
     new_speed = min(80, new_speed)
@@ -258,7 +258,7 @@ def thermald_thread(end_event, hw_queue):
 
       # Set ignition based on any panda connected
       # TODO: generalize line below if more cars needs to ignore ignition_line
-      ignore_ignition_line = f.has("IgnoreHardIgnition")
+      ignore_ignition_line = f.has("IgnoreHardIgnition" or "StockAcc")
       onroad_conditions["ignition"] = any((ps.ignitionLine and not ignore_ignition_line) or ps.ignitionCan for ps in pandaStates if ps.pandaType != log.PandaState.PandaType.unknown)
       # onroad_conditions["ignition"] = any(ps.ignitionLine or ps.ignitionCan for ps in pandaStates if ps.pandaType != log.PandaState.PandaType.unknown)
 
