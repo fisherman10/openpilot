@@ -30,9 +30,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerActuatorDelay = 0.30          # Steering wheel actuator delay in seconds
 
     ret.lateralTuning.init('pid')
-    ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
-    ret.longitudinalTuning.kpV = [0.9, 0.8, 0.8]
-
+   
     ret.enableGasInterceptor = 0x201 in fingerprint[0] or 0x401 in fingerprint[0]
     ret.openpilotLongitudinalControl = True
 
@@ -53,7 +51,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kf = 0.00014
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
-      ret.longitudinalTuning.kpV = [1.6, 1.6, 0.6]
+      ret.longitudinalTuning.kpV = [0, 0, 0]
       ret.longitudinalActuatorDelayLowerBound = 0.42
       ret.longitudinalActuatorDelayUpperBound = 0.60
 
@@ -63,13 +61,13 @@ class CarInterface(CarInterfaceBase):
 
     # Todo
     ret.longitudinalTuning.deadzoneBP = [0., 8.05]
-    ret.longitudinalTuning.deadzoneV = [.0, .14]
+    ret.longitudinalTuning.deadzoneV = [0, 0]
     ret.longitudinalTuning.kiBP = [0., 5., 20.]
-    ret.longitudinalTuning.kiV = [.14, .08, .02]
+    ret.longitudinalTuning.kiV = [0, 0, 0]
 
     ret.minEnableSpeed = -1
     ret.enableBsm = True
-    ret.stoppingDecelRate = 0.005 # reach stopping target smoothly
+    ret.stoppingDecelRate = 0.001 # reach stopping target smoothly
 
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront, tire_stiffness_factor=tire_stiffness_factor)
