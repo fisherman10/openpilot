@@ -250,7 +250,7 @@ PersonalisedPanel::PersonalisedPanel(QWidget* parent) : ListWidget(parent) {
   drivePathOffsetSb = new SpinboxControl("DrivePathOffset","Path Skew Offset", "The path offset from center of the lane. Perform positive offset if the vehicle is currently skewed left.", "m", (double []){-1.0, 1.0, 0.05}, false);
   addItem(drivePathOffsetSb);
 
-  fanPwmOverrideSb = new SpinboxControl("FanPwmOverride","Fan Speed", "Note: Lowering the fan speed may reduce the overall fan noise but risk of device overheating.", "%", (double []){0, 100.0, 0.1}, false);
+  fanPwmOverrideSb = new SpinboxControl("FanPwmOverride","Fan Speed", "Note: Lowering the fan speed may reduce the overall fan noise but risk of device overheating.", "%", (double []){0, 100.0, 0.01}, false);
   addItem(fanPwmOverrideSb);
 
   powerSaverEntryDurationSb = new SpinboxControl("PowerSaverEntryDuration","Device Poweroff", "Power saver entry duration after ignition is off.", "min", (double []){10, 720.0, 10.0}, true);

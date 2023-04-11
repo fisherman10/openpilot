@@ -65,7 +65,7 @@ def manager_init() -> None:
     ("IsRHD", "1"),
     ("RecordFront", "0"),
     ("RsjSession", "invalidsession"),
-    ("FanPwmOverride", "20.0"),
+    ("FanPwmOverride", "22.0"),
     ("PowerSaverEntryDuration", "30.0"),
     ("StoppingDistanceOffset", "0.0"),
     ("DrivePathOffset", "0.2"),
