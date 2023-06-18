@@ -36,7 +36,7 @@ class CarInterface(CarInterfaceBase):
 
     if candidate == CAR.X50:
       ret.wheelbase = 2.6
-      ret.steerRatio = 13.8
+      ret.steerRatio = 13.9
       ret.centerToFront = ret.wheelbase * 0.44
       tire_stiffness_factor = 0.9871
       ret.mass = 1370. + STD_CARGO_KG
@@ -48,7 +48,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kpV = [0.06, 0.16, 0.16, 0.16]
       ret.lateralTuning.pid.kiBP = [0., 20., 25., 30.]
       ret.lateralTuning.pid.kiV = [0.10, 0.18, 0.20, 0.50]
-      ret.lateralTuning.pid.kf = 0.000133
+      ret.lateralTuning.pid.kf = 0.00014
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
       ret.longitudinalTuning.kpV = [0, 0, 0]
