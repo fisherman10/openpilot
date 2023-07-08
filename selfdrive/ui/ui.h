@@ -93,10 +93,6 @@ typedef struct {
 typedef struct UIScene {
   mat3 view_from_calib;
   cereal::PandaState::PandaType pandaType;
-  
-  bool read_params = false;
-  int onroadScreenOff, onroadScreenOffBrightness, osoTimer, brightness, awake;
-  bool touched2 = false;
 
   // modelV2
   float lane_line_probs[4];
