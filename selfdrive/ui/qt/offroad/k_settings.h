@@ -12,6 +12,8 @@
 #include "selfdrive/common/params.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/input.h"
+#include "selfdrive/ui/qt/widgets/sunnypilot.h"
+
 
 // ********** settings window + top-level panels **********
 class SettingsWindow : public QFrame {
