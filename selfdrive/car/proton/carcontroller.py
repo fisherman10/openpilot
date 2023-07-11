@@ -14,8 +14,8 @@ from common.features import Features
 def apply_proton_steer_torque_limits(apply_torque, apply_torque_last, driver_torque, LIMITS):
 
   # limits due to driver torque
-  driver_max_torque = LIMITS.STEER_MAX + driver_torque * 40
-  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 1
+  driver_max_torque = LIMITS.STEER_MAX + driver_torque * 60
+  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 60
   max_steer_allowed = max(min(LIMITS.STEER_MAX, driver_max_torque), 0)
   min_steer_allowed = min(max(-LIMITS.STEER_MAX, driver_min_torque), 0)
   apply_torque = clip(apply_torque, min_steer_allowed, max_steer_allowed)
@@ -89,7 +89,7 @@ class CarController():
     if CS.out.standstill and enabled and (frame % 50 == 0):
       # Spam resume button to resume from standstill at max freq of 10 Hz.
       if not self.mads or CS.acc_req:
-        can_sends.append(send_buttons(self.packer, frame % 16, False))
+        can_sends.append(send_buttons(self.packer, frame % 20, False))
 
     self.last_steer = apply_steer
     new_actuators = actuators.copy()
