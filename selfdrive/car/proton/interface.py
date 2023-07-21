@@ -24,7 +24,7 @@ class CarInterface(CarInterfaceBase):
     ret.enableApgs = False                 # advanced parking guidance system
     ret.enableDsu = False                  # driving support unit
 
-    ret.steerRateCost = 0.82                # Lateral MPC cost on steering rate, higher value = sharper turn
+    ret.steerRateCost = 0.85                # Lateral MPC cost on steering rate, higher value = sharper turn
     ret.steerLimitTimer = 0.1              # time before steerLimitAlert is issued
     ret.steerControlType = car.CarParams.SteerControlType.torque
     ret.steerActuatorDelay = 0.20          # Steering wheel actuator delay in seconds
@@ -36,7 +36,7 @@ class CarInterface(CarInterfaceBase):
 
     if candidate == CAR.X50:
       ret.wheelbase = 2.6
-      ret.steerRatio = 13.82
+      ret.steerRatio = 13.85
       ret.centerToFront = ret.wheelbase * 0.44
       tire_stiffness_factor = 0.9871
       ret.mass = 1370. + STD_CARGO_KG
@@ -45,10 +45,10 @@ class CarInterface(CarInterfaceBase):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [550]]
 
       ret.lateralTuning.pid.kpBP = [0., 25., 35., 40.]
-      ret.lateralTuning.pid.kpV = [0.06, 0.12, 0.15, 0.16]
+      ret.lateralTuning.pid.kpV = [0.06, 0.12, 0.15, 0.15]
       ret.lateralTuning.pid.kiBP = [0., 20., 25., 30., 40.]
-      ret.lateralTuning.pid.kiV = [0.08, 0.13, 0.13, 0.22, 0.32]
-      ret.lateralTuning.pid.kf = 0.00014
+      ret.lateralTuning.pid.kiV = [0.08, 0.12, 0.13, 0.20, 0.25]
+      ret.lateralTuning.pid.kf = 0.0001399
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
       ret.longitudinalTuning.kpV = [0, 0, 0]
