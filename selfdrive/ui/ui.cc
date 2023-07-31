@@ -308,7 +308,7 @@ void Device::updateBrightness(const UIState &s) {
    *
    */
 
-  int hour_to_begin_dim = 19; // hour to begin dim
+  int hour_to_begin_dim = 18; // hour to begin dim
   float percent_to_dimm = 0.9; // percent to dimm (50% in this case) the screen after that hour
 
   // current date/time based on current system
@@ -332,7 +332,10 @@ void Device::updateBrightness(const UIState &s) {
 
   // here is where the m4gic happens, tunne at your taste and enjoy your day!!
   if (timeinfo.tm_hour > hour_to_begin_dim) {
-    brightness *= percent_to_dimm;
+     Hardware::set_brightness(10);
+}
+else {
+    Hardware::set_brightness(55);
   }
 
 
