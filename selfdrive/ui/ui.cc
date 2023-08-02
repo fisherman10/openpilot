@@ -309,7 +309,7 @@ void Device::updateBrightness(const UIState &s) {
    */
 
   int hour_to_begin_dim = 18; // hour to begin dim
-  int hour_to_revert_dim = 08; // hour to begin dim
+  int hour_to_revert_dim = 8; // hour to begin dim
   
   // current date/time based on current system
   time_t rawtime = time(NULL); 
@@ -331,7 +331,7 @@ void Device::updateBrightness(const UIState &s) {
   // }
 
   // here is where the m4gic happens, tune at your taste and enjoy your day!!
-  if (timeinfo.tm_hour > hour_to_begin_dim || timeinfo.tm_hour < hour_to_revert_dim) {
+  if (timeinfo.tm_hour > hour_to_begin_dim && timeinfo.tm_hour < hour_to_revert_dim) {
      Hardware::set_brightness(10);
 }
 else {
