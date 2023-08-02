@@ -27,7 +27,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerRateCost = 0.85                # Lateral MPC cost on steering rate, higher value = sharper turn
     ret.steerLimitTimer = 0.1              # time before steerLimitAlert is issued
     ret.steerControlType = car.CarParams.SteerControlType.torque
-    ret.steerActuatorDelay = 0.20          # Steering wheel actuator delay in seconds
+    ret.steerActuatorDelay = 0.18          # Steering wheel actuator delay in seconds
 
     ret.lateralTuning.init('pid')
    
@@ -47,8 +47,8 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kpBP = [0., 25., 35., 40.]
       ret.lateralTuning.pid.kpV = [0.06, 0.12, 0.151, 0.151]
       ret.lateralTuning.pid.kiBP = [0., 20., 25., 30., 40.]
-      ret.lateralTuning.pid.kiV = [0.05, 0.13, 0.14, 0.22, 0.26]
-      ret.lateralTuning.pid.kf = 0.000141
+      ret.lateralTuning.pid.kiV = [0.05, 0.10, 0.12, 0.15, 0.24]
+      ret.lateralTuning.pid.kf = 0.0001415
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
       ret.longitudinalTuning.kpV = [0, 0, 0]
