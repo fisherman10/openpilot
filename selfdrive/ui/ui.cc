@@ -334,7 +334,7 @@ void Device::updateBrightness(const UIState &s) {
   if (timeinfo.tm_hour > hour_to_begin_dim && timeinfo.tm_hour < hour_to_revert_dim) {
      Hardware::set_brightness(10);
 }
-#else {
+# else {
 #     Hardware::set_brightness(55);
 #  }
 
