@@ -334,15 +334,15 @@ void Device::updateBrightness(const UIState &s) {
   if (timeinfo.tm_hour > hour_to_begin_dim && timeinfo.tm_hour < hour_to_revert_dim) {
      Hardware::set_brightness(10);
 }
-# else {
-#     Hardware::set_brightness(55);
-#  }
+// else {
+//     Hardware::set_brightness(55);
+//  }
 
 
 
   if (brightness != last_brightness) {
    if (!brightness_future.isRunning()) {
-      brightness_future = QtConcurrent::run(Hardware::set_brightness, brightness);
+//      brightness_future = QtConcurrent::run(Hardware::set_brightness, brightness);
       last_brightness = brightness;
    }
   }
