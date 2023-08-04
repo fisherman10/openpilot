@@ -340,12 +340,12 @@ else {
 
 
 
-#  if (brightness != last_brightness) {
-#   if (!brightness_future.isRunning()) {
-#      brightness_future = QtConcurrent::run(Hardware::set_brightness, brightness);
-#      last_brightness = brightness;
-#   }
-#  }
+  if (brightness != last_brightness) {
+   if (!brightness_future.isRunning()) {
+      brightness_future = QtConcurrent::run(Hardware::set_brightness, brightness);
+      last_brightness = brightness;
+   }
+  }
 }
 
 bool Device::motionTriggered(const UIState &s) {
