@@ -279,27 +279,27 @@ void Device::resetInteractiveTimout() {
   interactive_timeout = (ignition_on ? 10 : 30) * UI_FREQ;
 }
 
-void Device::updateBrightness(const UIState &s) {
-  float clipped_brightness = BACKLIGHT_OFFROAD;
-  if (s.scene.started) {
+ void Device::updateBrightness(const UIState &s) {
+//  float clipped_brightness = BACKLIGHT_OFFROAD;
+//  if (s.scene.started) {
     // Scale to 0% to 100%
-    clipped_brightness = s.scene.light_sensor;
+//    clipped_brightness = s.scene.light_sensor;
 
     // CIE 1931 - https://www.photonstophotos.net/GeneralTopics/Exposure/Psychometric_Lightness_and_Gamma.htm
-    if (clipped_brightness <= 8) {
-      clipped_brightness = (clipped_brightness / 903.3);
-    } else {
-      clipped_brightness = std::pow((clipped_brightness + 16.0) / 116.0, 3.0);
-    }
+//    if (clipped_brightness <= 8) {
+//      clipped_brightness = (clipped_brightness / 903.3);
+//    } else {
+//      clipped_brightness = std::pow((clipped_brightness + 16.0) / 116.0, 3.0);
+//    }
 
     // Scale back to 10% to 100%
-    clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
-  }
+//    clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
+//  }
 
-  int brightness = brightness_filter.update(clipped_brightness);
-  if (!awake) {
-    brightness = 0;
-  }
+//  int brightness = brightness_filter.update(clipped_brightness);
+//  if (!awake) {
+//    brightness = 0;
+//  }
 
 
   /*
@@ -347,6 +347,8 @@ void Device::updateBrightness(const UIState &s) {
 //   }
 //  }
 }
+
+
 
 bool Device::motionTriggered(const UIState &s) {
   static float accel_prev = 0;
