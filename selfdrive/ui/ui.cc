@@ -331,7 +331,7 @@ void Device::resetInteractiveTimout() {
   // }
 
   // here is where the m4gic happens, tune at your taste and enjoy your day!!
-  if (timeinfo.tm_hour > hour_to_begin_dim && timeinfo.tm_hour < hour_to_revert_dim) {
+  if (timeinfo.tm_hour > hour_to_begin_dim || timeinfo.tm_hour < hour_to_revert_dim) {
      Hardware::set_brightness(10);
 }
  else {
