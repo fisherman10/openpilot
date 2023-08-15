@@ -309,7 +309,7 @@ void Device::resetInteractiveTimout() {
    */
 
   int hour_to_begin_dim = 18; // hour to begin dim
-  int hour_to_revert_dim = 8; // hour to begin dim
+  int hour_to_revert_dim = 8; // hour to revert dim
   
   // current date/time based on current system
   time_t rawtime = time(NULL); 
@@ -330,8 +330,8 @@ void Device::resetInteractiveTimout() {
   //   int tm_isdst; // hours of daylight savings time
   // }
 
-  // here is where the m4gic happens, tune at your taste and enjoy your day!!
-  if (timeinfo.tm_hour > 18 && < 8) {
+  // here is where the magic happens, tune at your taste and enjoy your day!!
+  if (timeinfo.tm_hour > hour_to_begin_dim & timeinfo.tm_hour < hour_to_revert_dim) {
      Hardware::set_brightness(05);
 }
  else {
