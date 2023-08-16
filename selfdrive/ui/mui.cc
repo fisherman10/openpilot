@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
     }
 
     if ((onroad != onroad_prev) || sm.frame < 2) {
-      Hardware::set_brightness(50);
+//      Hardware::set_brightness(50);
       Hardware::set_display_power(onroad);
     }
   });
