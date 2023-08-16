@@ -281,6 +281,14 @@ void Device::resetInteractiveTimout() {
 
  void Device::updateBrightness(const UIState &s) {
   float clipped_brightness = BACKLIGHT_OFFROAD;
+  
+    // current date/time based on current system
+  time_t rawtime = time(NULL); 
+
+  // put in a struct format
+  struct tm timeinfo;
+  localtime_r(&rawtime, &timeinfo);
+  
   if (s.scene.started) {
     // Scale to 0% to 100%
 	  if (((timeinfo.tm_hour >= 18) && (timeinfo.tm_hour <= 24)) || ((timeinfo.tm_hour >=0) && (timeinfo.tm_hour <= 8))) {
@@ -318,12 +326,7 @@ void Device::resetInteractiveTimout() {
 //  int hour_to_begin_dim = 18; // hour to begin dim
 //  int hour_to_revert_dim = 8; // hour to revert dim
   
-  // current date/time based on current system
-  time_t rawtime = time(NULL); 
 
-  // put in a struct format
-  struct tm timeinfo;
-  localtime_r(&rawtime, &timeinfo);
 
   // struct tm {
   //   int tm_sec;   // seconds of minutes from 0 to 61
