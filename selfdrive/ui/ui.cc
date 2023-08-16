@@ -292,10 +292,10 @@ void Device::resetInteractiveTimout() {
   if (s.scene.started) {
     // Scale to 0% to 100%
 	  if (((timeinfo.tm_hour >= 18) && (timeinfo.tm_hour <= 24)) || ((timeinfo.tm_hour >=0) && (timeinfo.tm_hour <= 8))) {
-     brightness = 5;
+     clipped_brightness = 10;
 }
  else {
-     brightness = 90;
+     clipped_brightness = 95;
   }
 
 
