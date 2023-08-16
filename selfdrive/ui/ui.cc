@@ -308,8 +308,8 @@ void Device::resetInteractiveTimout() {
    *
    */
 
-  int hour_to_begin_dim = 18; // hour to begin dim
-  int hour_to_revert_dim = 8; // hour to revert dim
+//  int hour_to_begin_dim = 18; // hour to begin dim
+//  int hour_to_revert_dim = 8; // hour to revert dim
   
   // current date/time based on current system
   time_t rawtime = time(NULL); 
