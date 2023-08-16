@@ -290,7 +290,7 @@ void Device::resetInteractiveTimout() {
      clipped_brightness = 95;
   }
 
-    clipped_brightness = s.scene.light_sensor;
+
 
     // CIE 1931 - https://www.photonstophotos.net/GeneralTopics/Exposure/Psychometric_Lightness_and_Gamma.htm
 //    if (clipped_brightness <= 8) {
