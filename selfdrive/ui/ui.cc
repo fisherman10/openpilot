@@ -331,7 +331,7 @@ void Device::resetInteractiveTimout() {
   // }
 
   // here is where the magic happens, tune at your taste and enjoy your day!!
-  if ((timeinfo.tm_hour >= 18) && (timeinfo.tm_hour <= 24) || (timeinfo.tm_hour >=0) && (timeinfo.tm_hour <= 8)) {
+  if (((timeinfo.tm_hour >= 18) && (timeinfo.tm_hour <= 24)) || ((timeinfo.tm_hour >=0) && (timeinfo.tm_hour <= 8))) {
      Hardware::set_brightness(05);
 }
  else {
