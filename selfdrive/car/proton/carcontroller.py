@@ -89,7 +89,7 @@ class CarController():
     if CS.out.standstill and enabled and (frame % 50 == 0):
       # Spam resume button to resume from standstill at max freq of 10 Hz.
       if not self.mads or CS.acc_req:
-        can_sends.append(send_buttons(self.packer, frame % 20, False))
+        can_sends.append(send_buttons(self.packer, frame % 30, False))
 
     self.last_steer = apply_steer
     new_actuators = actuators.copy()
