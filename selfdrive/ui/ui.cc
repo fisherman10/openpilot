@@ -279,42 +279,29 @@ void Device::resetInteractiveTimout() {
   interactive_timeout = (ignition_on ? 10 : 30) * UI_FREQ;
 }
 
- void Device::updateBrightness(const UIState &s) {
+void Device::updateBrightness(const UIState &s) {
   float clipped_brightness = BACKLIGHT_OFFROAD;
-  
-    // current date/time based on current system
-  time_t rawtime = time(NULL); 
-
-  // put in a struct format
-  struct tm timeinfo;
-  localtime_r(&rawtime, &timeinfo);
-  
   if (s.scene.started) {
-    // Scale to 0% to 100%
-	  if (((timeinfo.tm_hour >= 18) && (timeinfo.tm_hour <= 24)) || ((timeinfo.tm_hour >=0) && (timeinfo.tm_hour <= 8))) {
-     clipped_brightness = 10;
-}
- else {
-     clipped_brightness = 95;
-  }
-
-
-
+    clipped_brightness = s.scene.light_sensor;
+	
     // CIE 1931 - https://www.photonstophotos.net/GeneralTopics/Exposure/Psychometric_Lightness_and_Gamma.htm
-//    if (clipped_brightness <= 8) {
-//      clipped_brightness = (clipped_brightness / 903.3);
-//    } else {
-//      clipped_brightness = std::pow((clipped_brightness + 16.0) / 116.0, 3.0);
-//    }
-
+    if (clipped_brightness <= 8) {
+      clipped_brightness = (clipped_brightness / 903.3);
+    } else {
+      clipped_brightness = std::pow((clipped_brightness + 16.0) / 116.0, 3.0);
+    }
+	
     // Scale back to 10% to 100%
-//    clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
+    clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
   }
-
+  
+  
   int brightness = brightness_filter.update(clipped_brightness);
   if (!awake) {
     brightness = 0;
   }
+
+
 
 
   /*
@@ -323,10 +310,15 @@ void Device::resetInteractiveTimout() {
    *
    */
 
-//  int hour_to_begin_dim = 18; // hour to begin dim
-//  int hour_to_revert_dim = 8; // hour to revert dim
-  
 
+  float percent_to_dimm = 0.9; // percent to dimm (50% in this case) the screen after that hour
+
+  // current date/time based on current system
+  time_t rawtime = time(NULL); 
+
+  // put in a struct format
+  struct tm timeinfo;
+  localtime_r(&rawtime, &timeinfo);
 
   // struct tm {
   //   int tm_sec;   // seconds of minutes from 0 to 61
@@ -340,18 +332,19 @@ void Device::resetInteractiveTimout() {
   //   int tm_isdst; // hours of daylight savings time
   // }
 
-  // here is where the magic happens, tune at your taste and enjoy your day!!
+  // here is where the m4gic happens, tunne at your taste and enjoy your day!!
+  if (((timeinfo.tm_hour >= 18) && (timeinfo.tm_hour <= 24)) || ((timeinfo.tm_hour >=0) && (timeinfo.tm_hour <= 8))) {
+    brightness *= percent_to_dimm;
+  }
 
 
-
-//  if (brightness != last_brightness) {
-//   if (!brightness_future.isRunning()) {
-//      brightness_future = QtConcurrent::run(Hardware::set_brightness, brightness);
-//      last_brightness = brightness;
-//   }
-//  }
+  if (brightness != last_brightness) {
+    if (!brightness_future.isRunning()) {
+      brightness_future = QtConcurrent::run(Hardware::set_brightness, brightness);
+      last_brightness = brightness;
+    }
+  }
 }
-
 
 
 bool Device::motionTriggered(const UIState &s) {
