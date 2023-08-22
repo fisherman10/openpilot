@@ -332,7 +332,7 @@ void Device::updateBrightness(const UIState &s) {
 
   // here is where the m4gic happens, tunne at your taste and enjoy your day!!
   if (((timeinfo.tm_hour >= 18) && (timeinfo.tm_hour <= 24)) || ((timeinfo.tm_hour >=0) && (timeinfo.tm_hour <= 8))) {
-    brightness = 90;
+    brightness = 99;
   }
 
 
