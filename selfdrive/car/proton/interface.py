@@ -42,13 +42,13 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1370. + STD_CARGO_KG
       ret.wheelSpeedFactor = 1
 
-      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [590]]
+      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [650]]
 
       ret.lateralTuning.pid.kpBP = [0., 25., 35., 40.]
-      ret.lateralTuning.pid.kpV = [0.08, 0.14, 0.188, 0.188]
+      ret.lateralTuning.pid.kpV = [0.08, 0.13, 0.186, 0.186]
       ret.lateralTuning.pid.kiBP = [0., 20., 25., 30., 40.]
       ret.lateralTuning.pid.kiV = [0.03, 0.05, 0.06, 0.06, 0.08]
-      ret.lateralTuning.pid.kf = 0.00014184
+      ret.lateralTuning.pid.kf = 0.000141845
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
       ret.longitudinalTuning.kpV = [0, 0, 0]
