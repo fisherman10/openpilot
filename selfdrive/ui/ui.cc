@@ -12,7 +12,7 @@
 #include "selfdrive/common/watchdog.h"
 #include "selfdrive/hardware/hw.h"
 
-#include <ctime> // i used as a reference: <https://www.tutorialspoint.com/cplusplus/cpp_date_time.htm>
+// #include <ctime> // i used as a reference: <https://www.tutorialspoint.com/cplusplus/cpp_date_time.htm>
 
 #define BACKLIGHT_DT 0.05
 #define BACKLIGHT_TS 10.00
@@ -282,58 +282,19 @@ void Device::resetInteractiveTimout() {
 void Device::updateBrightness(const UIState &s) {
   float clipped_brightness = BACKLIGHT_OFFROAD;
   if (s.scene.started) {
-    clipped_brightness = s.scene.light_sensor;
-	
+    // Scale to 0% to 100%
+    clipped_brightness = 100.0;
+
     // CIE 1931 - https://www.photonstophotos.net/GeneralTopics/Exposure/Psychometric_Lightness_and_Gamma.htm
-    if (clipped_brightness <= 8) {
-      clipped_brightness = (clipped_brightness / 903.3);
-    } else {
-      clipped_brightness = std::pow((clipped_brightness + 16.0) / 116.0, 3.0);
-    }
-	
-    // Scale back to 10% to 100%
-    clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
+   
+
   }
-  
-  
+
   int brightness = brightness_filter.update(clipped_brightness);
   if (!awake) {
     brightness = 0;
   }
 
-
-
-
-  /*
-   *
-   *  AleSato dim bright after 18h
-   *
-   */
-
-
-  // current date/time based on current system
-  time_t rawtime = time(NULL); 
-
-  // put in a struct format
-  struct tm timeinfo;
-  localtime_r(&rawtime, &timeinfo);
-
-  // struct tm {
-  //   int tm_sec;   // seconds of minutes from 0 to 61
-  //   int tm_min;   // minutes of hour from 0 to 59
-  //   int tm_hour;  // hours of day from 0 to 24
-  //   int tm_mday;  // day of month from 1 to 31
-  //   int tm_mon;   // month of year from 0 to 11
-  //   int tm_year;  // year since 1900
-  //   int tm_wday;  // days since sunday
-  //   int tm_yday;  // days since January 1st
-  //   int tm_isdst; // hours of daylight savings time
-  // }
-
-  // here is where the m4gic happens, tunne at your taste and enjoy your day!!
-  if (((timeinfo.tm_hour >= 18) && (timeinfo.tm_hour <= 24)) || ((timeinfo.tm_hour >=0) && (timeinfo.tm_hour <= 8))) {
-    brightness = 99;
-  }
 
 
   if (brightness != last_brightness) {
