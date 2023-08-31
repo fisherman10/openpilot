@@ -12,7 +12,7 @@
 #include "selfdrive/common/watchdog.h"
 #include "selfdrive/hardware/hw.h"
 
-// #include <ctime> // i used as a reference: <https://www.tutorialspoint.com/cplusplus/cpp_date_time.htm>
+#include <ctime> // i used as a reference: <https://www.tutorialspoint.com/cplusplus/cpp_date_time.htm>
 
 #define BACKLIGHT_DT 0.05
 #define BACKLIGHT_TS 10.00
@@ -283,8 +283,12 @@ void Device::updateBrightness(const UIState &s) {
   float clipped_brightness = BACKLIGHT_OFFROAD;
   if (s.scene.started) {
     // Scale to 0% to 100%
-    clipped_brightness = 100.0;
-
+	if (((timeinfo.tm_hour >= 18) && (timeinfo.tm_hour <= 24)) || ((timeinfo.tm_hour >=0) && (timeinfo.tm_hour <= 8))) {
+    clipped_brightness = 10.0;
+	} else {
+	clipped_brightness = 50.0;	
+	}
+	
     // CIE 1931 - https://www.photonstophotos.net/GeneralTopics/Exposure/Psychometric_Lightness_and_Gamma.htm
    
 
