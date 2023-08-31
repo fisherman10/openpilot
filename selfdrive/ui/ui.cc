@@ -279,6 +279,25 @@ void Device::resetInteractiveTimout() {
   interactive_timeout = (ignition_on ? 10 : 30) * UI_FREQ;
 }
 
+  // current date/time based on current system
+  time_t rawtime = time(NULL); 
+  
+  // put in a struct format
+  struct tm timeinfo;
+  localtime_r(&rawtime, &timeinfo);
+
+  // struct tm {
+  //   int tm_sec;   // seconds of minutes from 0 to 61
+  //   int tm_min;   // minutes of hour from 0 to 59
+  //   int tm_hour;  // hours of day from 0 to 24
+  //   int tm_mday;  // day of month from 1 to 31
+  //   int tm_mon;   // month of year from 0 to 11
+  //   int tm_year;  // year since 1900
+  //   int tm_wday;  // days since sunday
+  //   int tm_yday;  // days since January 1st
+  //   int tm_isdst; // hours of daylight savings time
+  // }
+
 void Device::updateBrightness(const UIState &s) {
   float clipped_brightness = BACKLIGHT_OFFROAD;
   if (s.scene.started) {
