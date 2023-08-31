@@ -279,6 +279,11 @@ void Device::resetInteractiveTimout() {
   interactive_timeout = (ignition_on ? 10 : 30) * UI_FREQ;
 }
 
+void Device::updateBrightness(const UIState &s) {
+  float clipped_brightness = BACKLIGHT_OFFROAD;
+  if (s.scene.started) {
+    // Scale to 0% to 100%
+
   // current date/time based on current system
   time_t rawtime = time(NULL); 
   
@@ -298,10 +303,7 @@ void Device::resetInteractiveTimout() {
   //   int tm_isdst; // hours of daylight savings time
   // }
 
-void Device::updateBrightness(const UIState &s) {
-  float clipped_brightness = BACKLIGHT_OFFROAD;
-  if (s.scene.started) {
-    // Scale to 0% to 100%
+
 	if (((timeinfo.tm_hour >= 18) && (timeinfo.tm_hour <= 24)) || ((timeinfo.tm_hour >=0) && (timeinfo.tm_hour <= 8))) {
     clipped_brightness = 10.0;
 	} else {
