@@ -27,7 +27,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerRateCost = 0.85                # Lateral MPC cost on steering rate, higher value = sharper turn
     ret.steerLimitTimer = 0.1              # time before steerLimitAlert is issued
     ret.steerControlType = car.CarParams.SteerControlType.torque
-    ret.steerActuatorDelay = 0.18          # Steering wheel actuator delay in seconds
+    ret.steerActuatorDelay = 0.15          # Steering wheel actuator delay in seconds
 
     ret.lateralTuning.init('pid')
    
