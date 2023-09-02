@@ -304,10 +304,10 @@ void Device::updateBrightness(const UIState &s) {
   // }
 
 
-	if (((timeinfo.tm_hour >= 18) && (timeinfo.tm_hour <= 24)) || ((timeinfo.tm_hour >=0) && (timeinfo.tm_hour <= 8))) {
-    clipped_brightness = 10.0;
+	if ((timeinfo.tm_hour >= 18) && (timeinfo.tm_hour <= 8)) {
+    clipped_brightness = 5.0;
 	} else {
-	clipped_brightness = 50.0;	
+	clipped_brightness = 100.0;	
 	}
 	
     // CIE 1931 - https://www.photonstophotos.net/GeneralTopics/Exposure/Psychometric_Lightness_and_Gamma.htm
