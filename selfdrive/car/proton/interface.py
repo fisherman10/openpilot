@@ -27,7 +27,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerRateCost = 0.85                # Lateral MPC cost on steering rate, higher value = sharper turn
     ret.steerLimitTimer = 0.1              # time before steerLimitAlert is issued
     ret.steerControlType = car.CarParams.SteerControlType.torque
-    ret.steerActuatorDelay = 0.16          # Steering wheel actuator delay in seconds
+    ret.steerActuatorDelay = 0.10          # Steering wheel actuator delay in seconds
 
     ret.lateralTuning.init('pid')
    
@@ -36,7 +36,7 @@ class CarInterface(CarInterfaceBase):
 
     if candidate == CAR.X50:
       ret.wheelbase = 2.6
-      ret.steerRatio = 13.8659
+      ret.steerRatio = 13.8660
       ret.centerToFront = ret.wheelbase * 0.44
       tire_stiffness_factor = 0.9871
       ret.mass = 1370. + STD_CARGO_KG
