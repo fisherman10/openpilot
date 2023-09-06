@@ -280,7 +280,7 @@ void Device::resetInteractiveTimout() {
 }
 
 void Device::updateBrightness(const UIState &s) {
-  float clipped_brightness = BACKLIGHT_OFFROAD;
+  float clipped_brightness = 100;
   if (s.scene.started) {
     // Scale to 0% to 100%
 
@@ -304,11 +304,9 @@ void Device::updateBrightness(const UIState &s) {
   // }
 
 
-	if ((timeinfo.tm_hour > 18) && (timeinfo.tm_hour < 24)) {
+	if (timeinfo.tm_hour > 18) {
         clipped_brightness = 1.0;
-        } else if ((timeinfo.tm_hour > 0) && (timeinfo.tm_hour < 8)) {
-        clipped_brightness = 1.0;
-	} else {
+    } else {
 	clipped_brightness = 80.0;	
 	}
 	
