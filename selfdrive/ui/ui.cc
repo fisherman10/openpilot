@@ -280,14 +280,39 @@ void Device::resetInteractiveTimout() {
 }
 
 void Device::updateBrightness(const UIState &s) {
-  float clipped_brightness = 100;
-  int brightness = brightness_filter.update(clipped_brightness);
+  float clipped_brightness = BACKLIGHT_OFFROAD;
   if (s.scene.started) {
-    // Scale to 0% to 100%
+    clipped_brightness = s.scene.light_sensor;
 
+    // CIE 1931 - https://www.photonstophotos.net/GeneralTopics/Exposure/Psychometric_Lightness_and_Gamma.htm
+    if (clipped_brightness <= 8) {
+      clipped_brightness = (clipped_brightness / 903.3);
+    } else {
+      clipped_brightness = std::pow((clipped_brightness + 16.0) / 116.0, 3.0);
+    }
+
+    // Scale back to 10% to 100%
+    clipped_brightness = std::clamp(50.0f * clipped_brightness, 1.0f, 50.0f);
+  }
+
+  int brightness = brightness_filter.update(clipped_brightness);
+  if (!awake) {
+    brightness = 0;
+  }
+
+
+  /*
+   *
+   *  AleSato dim bright after 18h
+   *
+   */
+
+  int hour_to_begin_dim = 18; // hour to begin dim
+  float percent_to_dimm = 0.9; // percent to dimm (50% in this case) the screen after that hour
+ 
   // current date/time based on current system
-  time_t rawtime; 
-  
+  time_t rawtime = time(NULL); 
+
   // put in a struct format
   struct tm timeinfo;
   localtime_r(&rawtime, &timeinfo);
@@ -304,23 +329,10 @@ void Device::updateBrightness(const UIState &s) {
   //   int tm_isdst; // hours of daylight savings time
   // }
 
-
-	if (timeinfo.tm_hour > 18) {
-        brightness = 1.0;
-    } else {
-	    brightness = 80.0;	
-	}
-	
-    // CIE 1931 - https://www.photonstophotos.net/GeneralTopics/Exposure/Psychometric_Lightness_and_Gamma.htm
-   
-
+  // here is where the m4gic happens, tunne at your taste and enjoy your day!!
+  if (timeinfo.tm_hour > hour_to_begin_dim) {
+    brightness *= percent_to_dimm;
   }
-
-  int brightness = brightness_filter.update(clipped_brightness);
-  if (!awake) {
-    brightness = 0;
-  }
-
 
 
   if (brightness != last_brightness) {
@@ -330,7 +342,6 @@ void Device::updateBrightness(const UIState &s) {
     }
   }
 }
-
 
 bool Device::motionTriggered(const UIState &s) {
   static float accel_prev = 0;
