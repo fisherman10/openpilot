@@ -281,6 +281,7 @@ void Device::resetInteractiveTimout() {
 
 void Device::updateBrightness(const UIState &s) {
   float clipped_brightness = 100;
+  int brightness = brightness_filter.update(clipped_brightness);
   if (s.scene.started) {
     // Scale to 0% to 100%
 
