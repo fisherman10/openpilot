@@ -314,7 +314,7 @@ void Device::updateBrightness(const UIState &s) {
   time_t rawtime; 
 
   // put in a struct format
-  struct tm * timeinfo;
+  struct tm timeinfo;
   localtime_r(&rawtime, &timeinfo);
 
   // struct tm {
