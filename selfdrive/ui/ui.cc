@@ -292,7 +292,7 @@ void Device::updateBrightness(const UIState &s) {
     }
 
     // Scale back to 10% to 100%
-    clipped_brightness = std::clamp(50.0f * clipped_brightness, 1.0f, 50.0f);
+    clipped_brightness = std::clamp(50.0f * clipped_brightness, 2.0f, 50.0f);
   }
 
   int brightness = brightness_filter.update(clipped_brightness);
@@ -307,14 +307,14 @@ void Device::updateBrightness(const UIState &s) {
    *
    */
 
-  int hour_to_begin_dim = 18; // hour to begin dim
-  float percent_to_dimm = 0.9; // percent to dimm (50% in this case) the screen after that hour
+  int hour_to_begin_dim = 19; // hour to begin dim
+  float percent_to_dimm = 0.5; // percent to dimm (50% in this case) the screen after that hour
  
   // current date/time based on current system
-  time_t rawtime = time(NULL); 
+  time_t rawtime; 
 
   // put in a struct format
-  struct tm timeinfo;
+  struct tm * timeinfo;
   localtime_r(&rawtime, &timeinfo);
 
   // struct tm {
