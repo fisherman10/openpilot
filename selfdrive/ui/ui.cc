@@ -282,7 +282,7 @@ void Device::resetInteractiveTimout() {
 void Device::updateBrightness(const UIState &s) {
   float clipped_brightness = BACKLIGHT_OFFROAD;
   if (s.scene.started) {
-    clipped_brightness = s.scene.light_sensor;
+    clipped_brightness = 100.0 * s.scene.light_sensor;
 
     // CIE 1931 - https://www.photonstophotos.net/GeneralTopics/Exposure/Psychometric_Lightness_and_Gamma.htm
     if (clipped_brightness <= 8) {
@@ -292,7 +292,7 @@ void Device::updateBrightness(const UIState &s) {
     }
 
     // Scale back to 10% to 100%
-    clipped_brightness = std::clamp(50.0f * clipped_brightness, 2.0f, 50.0f);
+    clipped_brightness = std::clamp(50.0f * clipped_brightness, 2.0f, 100.0f);
   }
 
   int brightness = brightness_filter.update(clipped_brightness);
