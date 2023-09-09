@@ -310,7 +310,7 @@ void Device::updateBrightness(const UIState &s) {
 	clipped_brightness = 80.0;
 	}
   }
-}
+
 
   int brightness = brightness_filter.update(clipped_brightness);
   if (!awake) {
@@ -326,6 +326,7 @@ void Device::updateBrightness(const UIState &s) {
     }
   }
 }
+
 
 bool Device::motionTriggered(const UIState &s) {
   static float accel_prev = 0;
