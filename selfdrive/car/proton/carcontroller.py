@@ -1,4 +1,4 @@
-from cereal import car
+Üfrom cereal import car
 from selfdrive.car import make_can_msg
 from selfdrive.car.proton.protoncan import create_can_steer_command, create_hud, create_lead_detect, send_buttons, create_acc_cmd
 from selfdrive.car.proton.values import CAR, DBC, BRAKE_SCALE, GAS_SCALE
@@ -89,7 +89,7 @@ class CarController():
     if CS.out.standstill and enabled and (frame % 50 == 0):
       # Spam resume button to resume from standstill at max freq of 10 Hz.
       if not self.mads or CS.acc_req:
-        can_sends.append(send_buttons(self.packer, frame % 10, False))
+        can_sends.append(send_buttons(self.packer, frame % 5, False))
 
     self.last_steer = apply_steer
     new_actuators = actuators.copy()
