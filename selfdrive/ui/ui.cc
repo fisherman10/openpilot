@@ -302,9 +302,9 @@ void Device::updateBrightness(const UIState &s) {
   //   int tm_isdst; // hours of daylight savings time
   // }
 
-	if ((timeinfo.tm_hour > 14) && (timeinfo.tm_hour < 24)) {
+	if ((timeinfo.tm_hour > 11) && (timeinfo.tm_hour < 23)) {
 	clipped_brightness = 5.0;
-	} else if ((timeinfo.tm_hour > 0) && (timeinfo.tm_hour < 2)) {
+	} else if ((timeinfo.tm_hour > 11) && (timeinfo.tm_hour < 23)) {
 	clipped_brightness = 5.0;
 	} else {
 	clipped_brightness = 60.0;
