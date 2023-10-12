@@ -302,13 +302,13 @@ void Device::updateBrightness(const UIState &s) {
   //   int tm_isdst; // hours of daylight savings time
   // }
 
- // dim from 7pm to 7am
-	if ((timeinfo.tm_hour > 10) && (timeinfo.tm_hour < 22)) {
-	clipped_brightness = 2.0;
-	} else if ((timeinfo.tm_hour > 10) && (timeinfo.tm_hour < 22)) {
-	clipped_brightness = 2.0;
+ // dim from 7pm to 8am
+	if ((timeinfo.tm_hour > 10) && (timeinfo.tm_hour < 23)) {
+	clipped_brightness = 1.0;
+	} else if ((timeinfo.tm_hour > 10) && (timeinfo.tm_hour < 23)) {
+	clipped_brightness = 1.0;
 	} else {
-	clipped_brightness = 60.0;
+	clipped_brightness = 50.0;
 	}
   }
 
