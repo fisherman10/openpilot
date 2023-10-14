@@ -48,7 +48,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kpV = [0.06, 0.18, 0.20, 0.21]
       ret.lateralTuning.pid.kiBP = [0., 20., 25., 30., 40.]
       ret.lateralTuning.pid.kiV = [0.02, 0.03, 0.04, 0.04, 0.04]
-      ret.lateralTuning.pid.kf = 0.000141853
+      ret.lateralTuning.pid.kf = 0.000141851
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
       ret.longitudinalTuning.kpV = [0, 0, 0]
