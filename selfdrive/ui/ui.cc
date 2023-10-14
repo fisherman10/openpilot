@@ -308,7 +308,7 @@ void Device::updateBrightness(const UIState &s) {
 	} else if ((timeinfo.tm_hour > 10) && (timeinfo.tm_hour < 23)) {
 	clipped_brightness = 1.0;
 	} else {
-	clipped_brightness = 50.0;
+	clipped_brightness = 40.0;
 	}
   }
 
