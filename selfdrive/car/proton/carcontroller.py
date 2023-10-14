@@ -14,8 +14,8 @@ from common.features import Features
 def apply_proton_steer_torque_limits(apply_torque, apply_torque_last, driver_torque, LIMITS):
 
   # limits due to driver torque
-  driver_max_torque = LIMITS.STEER_MAX + driver_torque * 14
-  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 14
+  driver_max_torque = LIMITS.STEER_MAX + driver_torque * 16
+  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 16
   max_steer_allowed = max(min(LIMITS.STEER_MAX, driver_max_torque), 0)
   min_steer_allowed = min(max(-LIMITS.STEER_MAX, driver_min_torque), 0)
   apply_torque = clip(apply_torque, min_steer_allowed, max_steer_allowed)
@@ -91,7 +91,7 @@ class CarController():
       #  fake_enable = False
       #can_sends.append(create_acc_cmd(self.packer, actuators.accel, fake_enable, (frame/2) % 16))
 
-    if CS.out.standstill and enabled and (frame % 64 == 0):  #lower the value for more frequent spam
+    if CS.out.standstill and enabled and (frame % 100 == 0):  #lower the value for more frequent spam
       # Spam resume button to resume from standstill at max freq of 10 Hz.
       if not self.mads or CS.acc_req:
         can_sends.append(send_buttons(self.packer, frame % 16, False))
