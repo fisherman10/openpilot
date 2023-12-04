@@ -138,7 +138,7 @@ class DriverStatus():
 
     self._set_timers(active_monitoring=True)
 
-    self.ignore_dm = Features().has("IgnoreDM")
+    self.ignore_dm = Features().has("IgnoreDM" or "StockAcc")
 
   def _set_timers(self, active_monitoring):
     if self.active_monitoring_mode and self.awareness <= self.threshold_prompt:
