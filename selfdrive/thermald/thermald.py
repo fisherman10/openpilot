@@ -258,7 +258,7 @@ def thermald_thread(end_event, hw_queue):
 
       # Set ignition based on any panda connected
       # TODO: generalize line below if more cars needs to ignore ignition_line
-      ignore_ignition_line = f.has("IgnoreHardIgnition" or "StockAcc")
+      ignore_ignition_line = f.has("StockAcc" or "IgnoreHardIgnition")
       onroad_conditions["ignition"] = any((ps.ignitionLine and not ignore_ignition_line) or ps.ignitionCan for ps in pandaStates if ps.pandaType != log.PandaState.PandaType.unknown)
       # onroad_conditions["ignition"] = any(ps.ignitionLine or ps.ignitionCan for ps in pandaStates if ps.pandaType != log.PandaState.PandaType.unknown)
 
