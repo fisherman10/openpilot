@@ -1,19 +1,15 @@
-Version 9.6.3  (2024-05-20)
+Version 9.6.6  (2024-08-21)
 =========================
-* Support Proton S70
-* Support Honda City Hybrid RS
-* BYD:
-  * Change BYD steer behaviour
-* Proton:
-  * Fix blindspot detection (credits to TK)
-  * Add forward collision warning in bukapilot (credits to TK)
+* Added Change Branch feature
+* UI text improvements
+* Fixed the behaviour of lane change when Assisted Lane Change is off
+* Perodua LKA on by default
+* Perodua can now use combined stock ACC and bukapilot ACC (Feature Package: stock-acc)
 
 Version 9.6  (2024-02-06)
 =========================
 * Planner changes for vehicles with vision only ACC
-* QR code on homepage links to KommuApp
 * NEOS apk OTA enabled
-* Quiet mode reduces warning sound
 * Logs are now all in UTC format, fixing KommuApp date time
 * BYD:
   * Fix understeers on highway
