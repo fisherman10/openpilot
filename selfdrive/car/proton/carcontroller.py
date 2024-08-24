@@ -14,8 +14,8 @@ from common.features import Features
 def apply_proton_steer_torque_limits(apply_torque, apply_torque_last, driver_torque, LIMITS):
 
   # limits due to driver torque
-  driver_max_torque = LIMITS.STEER_MAX + driver_torque * 12
-  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 12
+  driver_max_torque = LIMITS.STEER_MAX + driver_torque * 30
+  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 30
   max_steer_allowed = max(min(LIMITS.STEER_MAX, driver_max_torque), 0)
   min_steer_allowed = min(max(-LIMITS.STEER_MAX, driver_min_torque), 0)
   apply_torque = clip(apply_torque, min_steer_allowed, max_steer_allowed)
@@ -69,7 +69,7 @@ class CarController():
 
     # steer
     new_steer = int(round(actuators.steer * self.params.STEER_MAX))
-    apply_steer = apply_proton_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorque, self.params)
+    apply_steer = apply_proton_steer_torque_limits(new_steer, self.last_steer, 0, self.params)
 
     self.steer_rate_limited = (new_steer != apply_steer) and (apply_steer != 0)
 
@@ -92,8 +92,8 @@ class CarController():
       #  fake_enable = False
       #can_sends.append(create_acc_cmd(self.packer, actuators.accel, fake_enable, (frame/2) % 16))
 
-    if CS.out.standstill and enabled and (frame % 24 == 0):  #lower the value for more frequent spam. 14 will disengage immediately. 15 will disengage after a while. 16 will +1 during resume.
-      # Spam resume button to resume from standstill at max freq of 10 Hz.
+    if CS.out.standstill and enabled and (frame % 29 == 0):
+      # Spam resume button to resume from standstill at max freq of 34.48 Hz.
       if not self.mads or CS.acc_req:
         can_sends.append(send_buttons(self.packer, frame % 16, False))
 
