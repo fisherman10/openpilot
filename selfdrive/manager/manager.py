@@ -58,19 +58,20 @@ def manager_init() -> None:
   params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
 
   default_params: List[Tuple[str, Union[str, bytes]]] = [
-    ("CompletedTrainingVersion", "1"),
-    ("HasAcceptedTerms", "1"),
+    ("CompletedTrainingVersion", "0"),
+    ("HasAcceptedTerms", "0"),
     ("OpenpilotEnabledToggle", "1"),
     ("IsMetric", "1"),
     ("IsAlcEnabled", "1"),
     ("IsLdwEnabled", "1"),
     ("IsRHD", "1"),
-    ("RecordFront", "0"),
+    ("LogVideoWifiOnly", "0"),
+    ("RecordFront", "1"),
     ("RsjSession", "invalidsession"),
-    ("FanPwmOverride", "15.0"),
-    ("PowerSaverEntryDuration", "60.0"),
+    ("FanPwmOverride", "70.0"),
+    ("PowerSaverEntryDuration", "360.0"),
     ("StoppingDistanceOffset", "0.0"),
-    ("DrivePathOffset", "0.2"),
+    ("DrivePathOffset", "0.0"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
