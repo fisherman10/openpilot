@@ -31,44 +31,45 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.pid.kf = 0.00007
 
     ret.longitudinalTuning.kpBP = [0., 5., 20.]
-    ret.longitudinalTuning.kpV = [0, 0, 0]
-    ret.longitudinalActuatorDelayLowerBound = 0.42
-    ret.longitudinalActuatorDelayUpperBound = 0.60
-    ret.longitudinalTuning.deadzoneBP = [0., 8.05]
-    ret.longitudinalTuning.deadzoneV = [0, 0]
+    ret.longitudinalTuning.kpV = [1.0, 0.8, 0.6]
+    ret.longitudinalActuatorDelayLowerBound = 0.4
+    ret.longitudinalActuatorDelayUpperBound = 0.5
     ret.longitudinalTuning.kiBP = [0., 5., 20.]
-    ret.longitudinalTuning.kiV = [0, 0, 0]
+    ret.longitudinalTuning.kiV = [0.2, 0.2, 0.2]
 
     ret.centerToFront = ret.wheelbase * 0.44
     ret.tireStiffnessFactor = 0.7933
 
     ret.openpilotLongitudinalControl = True
+    ret.wheelSpeedFactor = 1.02
 
     if candidate == CAR.X50:
-      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [530]]
+      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [545]]
     elif candidate == CAR.S70:
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [530]]
     elif candidate == CAR.X90:
-      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [530]]
+      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [545]]
     else:
       ret.dashcamOnly = True
       ret.safetyModel = car.CarParams.SafetyModel.noOutput
 
+
+    ret.stopAccel = -0.8
+    ret.vEgoStarting = 3.0
+    ret.stoppingControl = True
+
     ret.minEnableSpeed = -1
     ret.enableBsm = True
-    ret.stoppingDecelRate = 0.001 # reach stopping target smoothly
+    ret.stoppingDecelRate = 0.3 # reach stopping target smoothly
 
     return ret
 
   # returns a car.CarState
   def _update(self, c):
-    ret = self.CS.update(self.cp)
+    ret = self.CS.update(self.cp, self.cp_cam)
 
     # events
     events = self.create_common_events(ret)
-
-    # TODO: if self.CS.hand_on_wheel_warning and self.CS.is_icc_on:
-    #  events.add(EventName.protonHandOnWheelWarning)
 
     ret.events = events.to_msg()
     return ret

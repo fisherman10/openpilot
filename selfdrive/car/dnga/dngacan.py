@@ -1,27 +1,14 @@
 from openpilot.common.numpy_fast import clip
 from openpilot.common.conversions import Conversions as CV
 
-def lkc_checksum(addr,dat):
-  return ( addr + len(dat) + 1 + 1 + sum(dat)) & 0xFF
-
-def dnga_checksum(addr,dat):
-  return ( addr + len(dat) + 1 + 2 + sum(dat)) & 0xFF
-
-def create_can_steer_command(packer, steer, steer_req, raw_cnt):
-  """Creates a CAN message for the Perodua LKA Steer Command."""
-
+def create_can_steer_command(packer, steer, steer_req, cnt):
   values = {
     "STEER_REQ": steer_req,
+    "STEERING_COUNTER": cnt,
     "STEER_CMD": -steer if steer_req else 0,
-    "COUNTER": raw_cnt,
     "SET_ME_1": 1,
     "SET_ME_1_2": 1,
   }
-
-  dat = packer.make_can_msg("STEERING_LKAS", 0, values)[2]
-  crc = lkc_checksum(0x1d0, dat[:-1])
-  values["CHECKSUM"] = crc
-
 
   return packer.make_can_msg("STEERING_LKAS", 0, values)
 
@@ -37,22 +24,17 @@ def aeb_brake_command(packer, enabled, decel_cmd):
     "SET_ME_X1B": 0x0 if (enabled and decel_req) else 0,
   }
 
-  dat = packer.make_can_msg("ADAS_AEB", 0, values)[2]
-  crc = (dnga_checksum(680, dat[:-1]))
-  values["CHECKSUM"] = crc
-
   return packer.make_can_msg("ADAS_AEB", 0, values)
 
-def dnga_create_brake_command(packer, enabled, decel_req, pump, decel_cmd, aeb, idx):
+def create_brake_command(packer, enabled, decel_req, pump, decel_cmd, aeb):
 
   # Value overflow check
   # MAGNITUDE a max value 2.0 to prevent overflow, maximum seen on porto is 1.56
   # PUMP_REACTION{N} has a max value of 1.2, maximum seen on porto is 1.0
-  decel_req = clip(decel_req, 0., 0.5)
+  decel_req = clip(decel_req, 0., 1.56)
   pump = clip(pump, 0., 1.0)
 
   values = {
-    "COUNTER": idx,
     "PUMP_REACTION1": pump if enabled else 0,
     "BRAKE_REQ": decel_req and enabled,
     "MAGNITUDE": (-1* decel_cmd) if (enabled and decel_req) else 0,
@@ -64,13 +46,9 @@ def dnga_create_brake_command(packer, enabled, decel_req, pump, decel_cmd, aeb, 
     "AEB_1019": aeb,
   }
 
-  dat = packer.make_can_msg("ACC_BRAKE", 0, values)[2]
-  crc = (dnga_checksum(0x271, dat[:-1]))
-  values["CHECKSUM"] = crc
-
   return packer.make_can_msg("ACC_BRAKE", 0, values)
 
-def dnga_create_accel_command(packer, set_speed, acc_rdy, enabled, is_lead, des_speed, brake_amt, brake_pump, distance_val):
+def create_accel_command(packer, set_speed, acc_rdy, enabled, is_lead, des_speed, brake_amt, brake_pump, distance_val):
   is_braking = (brake_amt > 0.0 or brake_pump > 0.0)
 
   values = {
@@ -86,13 +64,9 @@ def dnga_create_accel_command(packer, set_speed, acc_rdy, enabled, is_lead, des_
     "ACC_CMD": des_speed * CV.MS_TO_KPH if enabled else 0,
   }
 
-  dat = packer.make_can_msg("ACC_CMD_HUD", 0, values)[2]
-  crc = (dnga_checksum(0x273, dat[:-1]))
-  values["CHECKSUM"] = crc
-
   return packer.make_can_msg("ACC_CMD_HUD", 0, values)
 
-def dnga_create_hud(packer, lkas_rdy, enabled, llane_visible, rlane_visible, ldw, fcw, aeb, front_depart, ldp_off, fcw_off):
+def create_hud(packer, lkas_rdy, enabled, llane_visible, rlane_visible, ldw, fcw, aeb, front_depart, ldp_off, fcw_off):
 
   values = {
     "LKAS_SET": lkas_rdy,
@@ -108,13 +82,9 @@ def dnga_create_hud(packer, lkas_rdy, enabled, llane_visible, rlane_visible, ldw
     "FCW_DISABLE": fcw_off,
   }
 
-  dat = packer.make_can_msg("LKAS_HUD", 0, values)[2]
-  crc = (dnga_checksum(0x274, dat[:-1]))
-  values["CHECKSUM"] = crc
-
   return packer.make_can_msg("LKAS_HUD", 0, values)
 
-def dnga_buttons(packer, set_button, res_button, counter):
+def buttons(packer, set_button, res_button):
 
   values = {
     "SET_MINUS": set_button,
@@ -123,12 +93,7 @@ def dnga_buttons(packer, set_button, res_button, counter):
     "PEDAL_DEPRESSED": 1,
     "NEW_SIGNAL_1": 1,
     "NEW_SIGNAL_2": 1,
-    "COUNTER" : counter,
   }
-
-  dat = packer.make_can_msg("PCM_BUTTONS", 0, values)[2]
-  crc = (dnga_checksum(520, dat[:-1]))
-  values["CHECKSUM"] = crc
 
   return packer.make_can_msg("PCM_BUTTONS", 0, values)
 
