@@ -143,14 +143,36 @@ class ChangeBranchSelect : public ButtonControl {
   Q_OBJECT
 
 public:
-  // Set upstream to match the branch given
-  std::string setUpstream(const std::string& branch) {
-    std::string b = branch.empty() ? "release" : branch;
-    return "git config remote.origin.fetch '+refs/heads/" + b +
-      ":refs/remotes/origin/" + b +
-      "' && git fetch origin '" + b +
-      "' && git branch -u origin/" + b;
+  // Set upstream for the current branch and ensure it works for local branches
+  std::string setUpstream(const std::string& br) {
+    std::string b = br;
+    std::string fallbackBranch = "snapshot";
+
+    // Check for internet connection to git origin
+    std::string checkConnectionCmd = "git ls-remote origin > /dev/null 2>&1";
+    int connectionStatus = std::system(checkConnectionCmd.c_str());
+
+    // If the branch is empty, set to fallbackBranch
+    if (br.empty()) {
+      b = fallbackBranch;
+    } else if (connectionStatus == 0) {
+      // If we can connect to git origin
+      // Command to check if the branch exists in remote
+      std::string checkBranchCmd = "git ls-remote --heads origin " + br + " | wc -l";
+      int branchExists = std::system(checkBranchCmd.c_str());
+
+      // If the branch doesn't exist in the remote, set to fallbackBranch
+      if (branchExists == 0) {
+        b = fallbackBranch;
+      }
+    }
+
+    std::string cmd = "git config remote.origin.fetch '+refs/heads/" + b + ":refs/remotes/origin/" + b + "'";
+    cmd += "; git fetch origin '" + b + "'; git branch -u origin/" + b;
+    cmd += "; git config branch." + b + ".merge refs/heads/" + b;
+    return cmd;
   }
+
   ChangeBranchSelect() : ButtonControl("Change Branch", "SET", "Warning: Untested branches may cause unexpected behaviours.") {
     selection_label = new QLabel();
     selection_label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);

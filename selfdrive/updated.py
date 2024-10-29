@@ -465,7 +465,7 @@ def main() -> None:
       if internet_ok and not update_available:
         update_failed_count = 0
 
-      if not internet_ok:
+      if not internet_ok and saved:
         params.put("UpdateStatus", "noInternet")
 
       # Fetch updates at most every 10 minutes
