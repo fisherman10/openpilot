@@ -88,7 +88,9 @@ class CarController():
 
     # CAN controlled lateral running at 50hz
     if (frame % 2) == 0:
-      can_sends.append(create_can_steer_command(self.packer, apply_steer, lat_active, CS.hand_on_wheel_warning and CS.is_icc_on, (frame/2) % 16, CS.stock_lks_settings,  CS.stock_lks_settings2))
+      can_sends.append(create_can_steer_command(self.packer, apply_steer, lat_active, \
+          CS.hand_on_wheel_warning and CS.is_icc_on, (frame/2) % 16, \
+          CS.lks_aux, CS.lks_audio, CS.lks_tactile, CS.lks_enable_main, CS.stock_ldw))
 
       #can_sends.append(create_hud(self.packer, apply_steer, enabled, ldw, rlane_visible, llane_visible))
       #can_sends.append(create_lead_detect(self.packer, lead_visible, enabled))
