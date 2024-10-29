@@ -35,7 +35,8 @@ def compute_set_distance(state):
   else:
     return 0
 
-def create_can_steer_command(packer, steer, steer_req, wheel_touch_warning, raw_cnt, stock_lks_settings, lks):
+def create_can_steer_command(packer, steer, steer_req, wheel_touch_warning, raw_cnt,\
+    lks_aux, lks_audio, lks_tactile, lks_enable_main, stock_ldw):
   """Creates a CAN message for the Perodua LKA Steer Command."""
   values = {
     "LKAS_ENGAGED1": steer_req,
@@ -43,10 +44,13 @@ def create_can_steer_command(packer, steer, steer_req, wheel_touch_warning, raw_
     "STEER_CMD": abs(steer) if steer_req else 0,
     "STEER_DIR": 1 if steer <= 0 else 0,
     "COUNTER": raw_cnt,
-    "SET_ME_1_1": lks,
+    "LKS_LDW": stock_ldw,
     "SET_ME_1_2": 1,
-    "SET_ME_1_3": 1,
-    "STOCK_LKS_SETTINGS": stock_lks_settings,
+    "LKS_STATUS": 1,
+    "STOCK_LKS_AUX": lks_aux,
+    "LKS_WARNING_AUDIO": lks_audio,
+    "LKS_WARNING_TACTILE": lks_tactile,
+    "LKS_ENABLE_MAIN" : lks_enable_main,
     "HAND_ON_WHEEL_WARNING": wheel_touch_warning,
     "WHEEL_WARNING_CHIME": 0,
   }
@@ -60,8 +64,8 @@ def create_hud(packer, steer, steer_req, ldw, rlane, llane):
   """Creates a CAN message for the Perodua LKA Steer Command."""
   steer_dir = steer >= 0
   values = {
-    "LANE_DEPARTURE_WARNING_RIGHT": ldw and not steer_dir,
-    "LANE_DEPARTURE_WARNING_LEFT": ldw and steer_dir,
+    "LANE_DEPARTURE_AUDIO_RIGHT": ldw and not steer_dir,
+    "LANE_DEPARTURE_AUDIO_LEFT": ldw and steer_dir,
     "LEFT_LANE_VISIBLE_DISENGAGE": 0,
     "RIGHT_LANE_VISIBLE_DISENGAGE": 0,
     "STEER_REQ_RIGHT": steer_req,

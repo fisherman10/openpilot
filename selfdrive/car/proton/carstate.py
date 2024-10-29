@@ -26,8 +26,11 @@ class CarState(CarStateBase):
     f = Features()
     self.mads = f.has("StockAcc")
 
-    self.stock_lks_settings = 0
-    self.stock_lks_settings2 = 0
+    self.lks_aux = 0
+    self.lks_audio = 0
+    self.lks_tactile = 0
+    self.lks_enable_main = 0
+    self.stock_ldw = 0
     self.stock_ldp = 0
     self.stock_ldp_cmd = 0
     self.steer_dir = 0
@@ -35,11 +38,14 @@ class CarState(CarStateBase):
   def update(self, cp):
     ret = car.CarState.new_message()
 
-    self.stock_lks_settings = cp.vl["ADAS_LKAS"]["STOCK_LKS_SETTINGS"]
+    self.lks_aux = cp.vl["ADAS_LKAS"]["STOCK_LKS_AUX"]
+    self.lks_audio = cp.vl["ADAS_LKAS"]["LKS_WARNING_AUDIO"]
+    self.lks_tactile = cp.vl["ADAS_LKAS"]["LKS_WARNING_TACTILE"]
+    self.lks_enable_main = cp.vl["ADAS_LKAS"]["LKS_ENABLE_MAIN"]
     self.stock_ldp_cmd = cp.vl["ADAS_LKAS"]["STEER_CMD"]
-    self.stock_lks_settings2 = cp.vl["ADAS_LKAS"]["SET_ME_1_1"]
+    self.stock_ldw = cp.vl["ADAS_LKAS"]["LKS_LDW"]
     self.steer_dir = cp.vl["ADAS_LKAS"]["STEER_DIR"]
-    self.stock_ldp = bool(cp.vl["LKAS"]["LANE_DEPARTURE_WARNING_RIGHT"]) or bool(cp.vl["LKAS"]["LANE_DEPARTURE_WARNING_LEFT"])
+    self.stock_ldp = bool(cp.vl["LKAS"]["LANE_DEPARTURE_AUDIO_RIGHT"]) or bool(cp.vl["LKAS"]["LANE_DEPARTURE_AUDIO_LEFT"])
     self.leadDistance = cp.vl["ADAS_LEAD_DETECT"]['LEAD_DISTANCE']
     # If cruise mode is ICC, make bukapilot control steering so it won't disengage.
     ret.lkaDisabled = not (bool(cp.vl["ADAS_LKAS"]["LKS_ENABLE"]) or self.is_icc_on)
@@ -136,7 +142,7 @@ class CarState(CarStateBase):
     # button presses
     ret.leftBlinker = bool(cp.vl["LEFT_STALK"]["LEFT_SIGNAL"])
     ret.rightBlinker = bool(cp.vl["LEFT_STALK"]["RIGHT_SIGNAL"])
-    ret.genericToggle = bool(cp.vl["LEFT_STALK"]["GENERIC_TOGGLE"])
+    ret.genericToggle = bool(cp.vl["LEFT_STALK"]["GENERIC_TOGGLE"]) # High beam toggle
 
     ret.espDisabled = bool(cp.vl["PARKING_BRAKE"]["ESC_ON"]) != 1
 
@@ -187,14 +193,17 @@ class CarState(CarStateBase):
       ("CRUISE_ENABLE", "ACC_CMD", 1),
       ("ACC_REQ", "ACC_CMD", 1),
       ("HAND_ON_WHEEL_WARNING", "ADAS_LKAS", 1),
-      ("STOCK_LKS_SETTINGS", "ADAS_LKAS", 1),
+      ("STOCK_LKS_AUX", "ADAS_LKAS", 0),
+      ("LKS_WARNING_AUDIO", "ADAS_LKAS", 0),
+      ("LKS_WARNING_TACTILE", "ADAS_LKAS", 0),
+      ("LKS_ENABLE_MAIN", "ADAS_LKAS", 1),
       ("STEER_DIR", "ADAS_LKAS", 1),
-      ("SET_ME_1_1", "ADAS_LKAS", 1),
+      ("LKS_LDW", "ADAS_LKAS", 1),
       ("STEER_CMD", "ADAS_LKAS", 1),
       ("LANE_DEPARTURE_WARNING_RIGHT", "LKAS", 1),
       ("LANE_DEPARTURE_WARNING_LEFT", "LKAS", 1),
       ("STOCK_FCW_TRIGGERED", "FCW", 1),
-      ("LKS_ENABLE", "ADAS_LKAS", 1)
+      ("LKS_ENABLE", "ADAS_LKAS", 1),
     ]
     checks = []
 
