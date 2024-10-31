@@ -158,15 +158,16 @@ public:
     } else if (connectionStatus == 0) {
       // If we can connect to git origin
       // Command to check if the branch exists in remote
-      std::string checkBranchCmd = "git ls-remote --heads origin " + br + " | wc -l";
-      int branchExists = std::system(checkBranchCmd.c_str());
+      std::string checkBranchCmd = "git ls-remote --heads origin " + br + " | grep -q refs/heads/" + br;
+      bool branchExists = (std::system(checkBranchCmd.c_str()) == 0);
 
       // If the branch doesn't exist in the remote, set to fallbackBranch
-      if (branchExists == 0) {
+      if (!branchExists) {
         b = fallbackBranch;
       }
     }
 
+    // Ensure the commands run regardless of internet connectivity and overwrite existing upstream
     std::string cmd = "git config remote.origin.fetch '+refs/heads/" + b + ":refs/remotes/origin/" + b + "'";
     cmd += "; git fetch origin '" + b + "'; git branch -u origin/" + b;
     cmd += "; git config branch." + b + ".merge refs/heads/" + b;
