@@ -31,7 +31,8 @@ class CarState(CarStateBase):
     self.lks_tactile = 0
     self.lks_enable_main = 0
     self.stock_ldw = 0
-    self.stock_ldp = 0
+    self.stock_ldp_left = 0
+    self.stock_ldp_right = 0
     self.stock_ldp_cmd = 0
     self.steer_dir = 0
 
@@ -45,7 +46,9 @@ class CarState(CarStateBase):
     self.stock_ldp_cmd = cp.vl["ADAS_LKAS"]["STEER_CMD"]
     self.stock_ldw = cp.vl["ADAS_LKAS"]["LKS_LDW"]
     self.steer_dir = cp.vl["ADAS_LKAS"]["STEER_DIR"]
-    self.stock_ldp = bool(cp.vl["LKAS"]["LANE_DEPARTURE_AUDIO_RIGHT"]) or bool(cp.vl["LKAS"]["LANE_DEPARTURE_AUDIO_LEFT"])
+    self.stock_ldp_left = bool(cp.vl["LKAS"]["STEER_REQ_LEFT"])
+    self.stock_ldp_right = bool(cp.vl["LKAS"]["STEER_REQ_RIGHT"])
+
     self.leadDistance = cp.vl["ADAS_LEAD_DETECT"]['LEAD_DISTANCE']
     # If cruise mode is ICC, make bukapilot control steering so it won't disengage.
     ret.lkaDisabled = not (bool(cp.vl["ADAS_LKAS"]["LKS_ENABLE"]) or self.is_icc_on)
@@ -204,6 +207,8 @@ class CarState(CarStateBase):
       ("LANE_DEPARTURE_WARNING_LEFT", "LKAS", 1),
       ("STOCK_FCW_TRIGGERED", "FCW", 1),
       ("LKS_ENABLE", "ADAS_LKAS", 1),
+      ("STEER_REQ_RIGHT", "LKAS", 0),
+      ("STEER_REQ_LEFT", "LKAS", 0),
     ]
     checks = []
 
