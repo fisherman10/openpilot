@@ -219,6 +219,7 @@ public:
 
 private:
   void showEvent(QShowEvent *event) override;
+  void hideEvent(QHideEvent *event) override;
   void updateLabels();
 
   LabelControl *gitCommitLbl;
@@ -232,6 +233,7 @@ private:
 
   Params params;
   QFileSystemWatcher *fs_watch;
+  QTimer *timer;
 };
 
 class C2NetworkPanel: public ListWidget {
