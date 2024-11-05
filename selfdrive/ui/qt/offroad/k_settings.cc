@@ -292,8 +292,8 @@ SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
       fs_watch->addPath(QString::fromStdString(params.getParamPath("LastUpdateTime")));
       fs_watch->addPath(QString::fromStdString(params.getParamPath("UpdateFailedCount")));
       fs_watch->addPath(QString::fromStdString(params.getParamPath("UpdateStatus")));
-      updateBtn->setText("UPDATING");
-      updateBtn->setEnabled(false);
+      params.put("UpdateStatus", "checking");
+      updateLabels();
     }
     std::system("pkill -1 -f selfdrive.updated");
   });
@@ -305,20 +305,20 @@ SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
 
   fs_watch = new QFileSystemWatcher(this);
   QObject::connect(fs_watch, &QFileSystemWatcher::fileChanged, [=](const QString path) {
-    if (path.contains("UpdateFailedCount") && std::atoi(params.get("UpdateFailedCount").c_str()) > 0) {
-      lastUpdateLbl->setText("Failed to fetch update");
-      updateBtn->setText("CHECK");
-      updateBtn->setEnabled(true);
-      std::string failedStatus = params.get("UpdateStatus");
-      if ((failedStatus == "noInternet") || (failedStatus == "unsavedChanges")) {updateLabels();}
-    } else if (path.contains("LastUpdateTime") || path.contains("UpdateStatus")) {
-      updateLabels();
-    }
+    updateLabels();
   });
+
+  timer = new QTimer(this);
+  timer->callOnTimeout(this, &SoftwarePanel::updateLabels);
 }
 
 void SoftwarePanel::showEvent(QShowEvent *event) {
   updateLabels();
+  timer->start(1000);
+}
+
+void SoftwarePanel::hideEvent(QHideEvent *event) {
+  timer->stop();
 }
 
 void SoftwarePanel::updateLabels() {
@@ -340,16 +340,27 @@ void SoftwarePanel::updateLabels() {
     allowed = params.getBool("IsOffroad");
     connect(updateBtn, &ButtonControl::clicked, [=]() {
       updateBtn->setText("REBOOTING");
+      updateBtn->setEnabled(false);
       Params().putBool("DoReboot", true);
     });
-  } else if (status == "checking" || status == "prepareDownload"
-      || status == "downloading" || status == "installing") {
-    lastUpdate = "Updating";
+  } else if (status == "checking") {
+    btnText = "CHECKING";
+    lastUpdate = "Checking for update";
+  } else if (status == "prepareDownload") {
     btnText = "UPDATING";
-  } else if(!tm.empty()) {
+    lastUpdate = "Preparing to download update";
+  } else if (status == "downloading") {
+    btnText = "UPDATING";
+    lastUpdate = "Downloading update";
+  } else if (status == "installing") {
+    btnText = "UPDATING";
+    lastUpdate = "Installing update";
+  } else if (status == "fetchFailed") {
+    lastUpdate = "Failed to fetch update";
+    allowed = true;
+  } else if (!tm.empty()) {
     lastUpdate = "Checked " + timeAgo(QDateTime::fromString(QString::fromStdString(tm + "Z"), Qt::ISODate));
     allowed = true;
-    btnText = "CHECK";
     if (status == "noInternet") {
       lastUpdate += ", no internet";
     } else if (status == "latest") {

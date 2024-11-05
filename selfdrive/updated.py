@@ -330,7 +330,13 @@ def check_for_update() -> Tuple[bool, bool]:
     git_fetch_output = run(["git", "fetch", "--dry-run"], OVERLAY_MERGED, low_priority=True)
     return True, check_git_fetch_result(git_fetch_output)
   except subprocess.CalledProcessError:
-    return False, False
+    try: # Check for internet connection
+      remote_url = subprocess.check_output(["git", "remote", "get-url", "origin"]).strip().decode('utf-8')
+      subprocess.check_output(["git", "ls-remote", remote_url], stderr=subprocess.STDOUT)
+      internet_connection = True
+    except subprocess.CalledProcessError:
+      internet_connection = False
+    return internet_connection, False
 
 
 def fetch_update(wait_helper: WaitTimeHelper) -> bool:
@@ -426,7 +432,7 @@ def main() -> None:
   wait_helper.sleep(30)
 
   # Run the update loop
-  #  * every 1m, do a lightweight internet/update check
+  #  * every 10m, do a lightweight internet/update check
   #  * every 10m, do a full git fetch
   while not wait_helper.shutdown:
     update_now = wait_helper.ready_event.is_set()
@@ -441,14 +447,21 @@ def main() -> None:
       continue
 
     def check_git_saved():
+      try:
+        # Check for uncommitted changes in the working directory or staged changes
+        if subprocess.check_output(['git', 'diff']) or subprocess.check_output(['git', 'diff', '--cached']):
+          return False
         try:
-            if subprocess.check_output(['git', 'diff']) or \
-                subprocess.check_output(['git', 'diff', '--cached']) or \
-                subprocess.check_output(['git', 'cherry', '-v']):
-                return False
-            return True
-        except subprocess.CalledProcessError:
+          # Check for unpushed commits
+          cherry_output = subprocess.check_output(['git', 'cherry', '-v'])
+          if cherry_output:
             return False
+        except subprocess.CalledProcessError:
+          return True
+        # If there are no uncommitted or unpushed changes, return True
+        return True
+      except subprocess.CalledProcessError:
+        return False
 
     saved = check_git_saved() or is_tested_branch()
     if not saved:
@@ -468,7 +481,7 @@ def main() -> None:
       if not internet_ok and saved:
         params.put("UpdateStatus", "noInternet")
 
-      # Fetch updates at most every 10 minutes
+      # Fetch updates at most every 10 minutes (full git fetch)
       if saved and internet_ok and (update_now or time.monotonic() - last_fetch_time > 60*10):
         new_version = fetch_update(wait_helper)
         update_failed_count = 0
@@ -485,6 +498,7 @@ def main() -> None:
         returncode=e.returncode
       )
       exception = f"command failed: {e.cmd}\n{e.output}"
+      update_failed_count += 1
       overlay_init.unlink(missing_ok=True)
     except Exception as e:
       cloudlog.exception("uncaught updated exception, shouldn't happen")
@@ -492,11 +506,13 @@ def main() -> None:
       overlay_init.unlink(missing_ok=True)
 
     try:
+      if update_failed_count > 0 and internet_ok:
+        params.put("UpdateStatus", "fetchFailed")
       set_params(new_version, update_failed_count, exception)
     except Exception:
       cloudlog.exception("uncaught updated exception while setting params, shouldn't happen")
 
-    wait_helper.sleep(60)
+    wait_helper.sleep(60 * 10) # Interval for lightweight internet/update check
 
   dismount_overlay()
 
