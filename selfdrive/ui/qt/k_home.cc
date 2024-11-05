@@ -53,7 +53,7 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
 
 void HomeWindow::showEvent(QShowEvent *event) {
   refresh();
-  timer->start(10 * 1000);
+  timer->start(1 * 1000);
 }
 
 void HomeWindow::hideEvent(QHideEvent *event) {
