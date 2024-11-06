@@ -392,9 +392,21 @@ C2NetworkPanel::C2NetworkPanel(QWidget *parent) : ListWidget(parent) {
   // SSH key management
   addItem(new SshToggle());
   addItem(new SshControl());
+
+  timer = new QTimer(this);
+  timer->callOnTimeout(this, &C2NetworkPanel::updateLabels);
 }
 
 void C2NetworkPanel::showEvent(QShowEvent *event) {
+  updateLabels();
+  timer->start(1500);
+}
+
+void C2NetworkPanel::hideEvent(QHideEvent *event) {
+  timer->stop();
+}
+
+void C2NetworkPanel::updateLabels() {
   ipaddress->setText(getIPAddress());
   networkType->setText(getNetworkType());
 }

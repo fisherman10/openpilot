@@ -243,9 +243,12 @@ public:
 
 private:
   void showEvent(QShowEvent *event) override;
+  void hideEvent(QHideEvent *event) override;
+  void updateLabels();
   QString getIPAddress();
   QString getNetworkType();
   LabelControl *ipaddress;
   LabelControl *networkType;
+  QTimer *timer;
 };
 
