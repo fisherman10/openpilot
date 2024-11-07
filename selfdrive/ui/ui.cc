@@ -324,7 +324,11 @@ void Device::updateWakefulness(const UIState &s) {
   bool ignition_just_turned_off = !s.scene.ignition && ignition_on;
   ignition_on = s.scene.ignition;
 
-  if (ignition_just_turned_off || motionTriggered(s)) {
+  std::string updateStatus = Params().get("UpdateStatus");
+  bool updating = (updateStatus == "prepareDownload" || updateStatus == "downloading" ||
+                   updateStatus == "installing");
+
+  if (ignition_just_turned_off || motionTriggered(s) || updating) {
     resetInteractiveTimout();
   } else if (interactive_timeout > 0 && --interactive_timeout == 0) {
     emit interactiveTimout();
