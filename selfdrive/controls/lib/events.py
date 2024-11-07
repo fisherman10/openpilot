@@ -300,7 +300,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
 
   EventName.startupNoFw: {
     ET.PERMANENT: StartupAlert("Car Unrecognized",
-                               "Check comma power connections",
+                               "Check Kommu power connections",
                                alert_status=AlertStatus.userPrompt),
   },
 
