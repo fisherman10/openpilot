@@ -107,16 +107,16 @@ class Uploader():
         if is_uploaded:
           continue
 
-        # Skip video files if the toggle is on and the device is not connected to WiFi
-        if Params().get_bool("LogVideoWifiOnly") and network_type != NetworkType.wifi and name.endswith(".ts"):
-          continue
-
         try:
           if name in self.immediate_priority:
             self.immediate_count += 1
             self.immediate_size += os.path.getsize(fn)
         except OSError:
           pass
+
+        # Skip video files if the toggle is on and the device is not connected to WiFi
+        if Params().get_bool("LogVideoWifiOnly") and network_type != NetworkType.wifi and name.endswith(".ts"):
+          continue
 
         yield (name, key, fn)
 
@@ -235,6 +235,8 @@ def uploader_fn(exit_event):
     offroad = params.get_bool("IsOffroad")
     network_type = sm['deviceState'].networkType if not force_wifi else NetworkType.wifi
     if network_type == NetworkType.none:
+      # Still check for the remaining upload size
+      for _ in uploader.list_upload_files(network_type): pass  # consume generator
       uploader.last_speed = 0
       pm.send("uploaderState", uploader.get_msg())
       if allow_sleep:
