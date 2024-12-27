@@ -216,9 +216,12 @@ class Controls:
     # Check if blinker was last on below ALC speed
     self.blinker_below_lane_change_speed = False
     self.prev_one_blinker = False
+    self.alc_speed_below = False # If ALC was doing lane change when speed changed to below min speed
+    self.prev_enough_lane_change_speed = False # If the previous speed was enough for ALC
 
   def is_alc_active(self, CS):
-    return CS.vEgo >= LANE_CHANGE_SPEED_MIN and not self.blinker_below_lane_change_speed and self.is_alc_enabled
+    return self.is_alc_enabled and self.active and \
+           (self.alc_speed_below or (CS.vEgo >= LANE_CHANGE_SPEED_MIN and not self.blinker_below_lane_change_speed))
 
   def update_events(self, CS):
     """Compute carEvents from carState"""
@@ -273,22 +276,21 @@ class Controls:
       else:
         self.events.add(EventName.calibrationInvalid)
 
-    # Handle lane change
-    lc_state = self.sm['lateralPlan'].laneChangeState
+    # Handle lane change events
+    lat_plan = self.sm['lateralPlan']
+    lc_state = lat_plan.laneChangeState
 
-    if lc_state in (LaneChangeState.preLaneChange, LaneChangeState.laneChangeStarting, LaneChangeState.laneChangeFinishing):
-      direction = self.sm['lateralPlan'].laneChangeDirection
-      # Show blindspot event only for preLaneChange and Starting
-      if lc_state in (LaneChangeState.preLaneChange, LaneChangeState.laneChangeStarting) \
-          and ((CS.leftBlindspot and direction == LaneChangeDirection.left) or \
-          (CS.rightBlindspot and direction == LaneChangeDirection.right)):
+    if self.is_alc_active(CS) and (lc_state != LaneChangeState.off or CS.vEgo >= LANE_CHANGE_SPEED_MIN) and not CS.lkaDisabled:
+      if self.is_one_blinker(CS) and ((CS.leftBlindspot and CS.leftBlinker) or (CS.rightBlindspot and CS.rightBlinker)):
         self.events.add(EventName.laneChangeBlocked)
+
       elif lc_state == LaneChangeState.preLaneChange:
-        if direction == LaneChangeDirection.left:
+        if lat_plan.laneChangeDirection == LaneChangeDirection.left:
           self.events.add(EventName.preLaneChangeLeft)
         else:
           self.events.add(EventName.preLaneChangeRight)
-      else:
+
+      elif lc_state != LaneChangeState.off:
         self.events.add(EventName.laneChange)
 
     if not CS.canValid:
@@ -531,15 +533,25 @@ class Controls:
     actuators.longControlState = self.LoC.long_control_state
 
     # Check if blinker was on below lane change speed for ALC
+    below_lane_change_speed = CS.vEgo < LANE_CHANGE_SPEED_MIN
     one_blinker = self.is_one_blinker(CS)
     if one_blinker:
       self.last_blinker_frame = self.sm.frame
 
     if one_blinker and not self.prev_one_blinker:
-      self.blinker_below_lane_change_speed = CS.vEgo < LANE_CHANGE_SPEED_MIN
+      self.blinker_below_lane_change_speed = below_lane_change_speed
     elif not one_blinker:
       self.blinker_below_lane_change_speed = False
     self.prev_one_blinker = one_blinker
+
+    # Check if ALC was doing lane change when speed changed to below min speed
+    lc_state = lat_plan.laneChangeState
+    if (self.prev_enough_lane_change_speed and below_lane_change_speed) and \
+    lc_state in (LaneChangeState.laneChangeStarting, LaneChangeState.laneChangeFinishing):
+      self.alc_speed_below = True
+    elif not one_blinker and lc_state == LaneChangeState.off:
+      self.alc_speed_below = False
+    self.prev_enough_lane_change_speed = not below_lane_change_speed
 
     # State specific actions
     if not self.active:
@@ -630,9 +642,7 @@ class Controls:
     CC.enabled = self.enabled
     CC.active = self.active
     CC.actuators = actuators
-
-    CC.laneActive = not (CS.lkaDisabled or (self.is_one_blinker(CS) and not self.is_alc_active(CS)))
-    self.laneActive = CC.laneActive
+    CC.laneActive = self.laneActive = not (CS.lkaDisabled or (self.is_one_blinker(CS) and not self.is_alc_active(CS)))
 
     orientation_value = self.sm['liveLocationKalman'].orientationNED.value
     if len(orientation_value) > 2:
