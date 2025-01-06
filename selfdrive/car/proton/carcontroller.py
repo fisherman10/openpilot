@@ -17,8 +17,8 @@ RES_LEN = 2 # Press resume for 2 frames
 def apply_proton_steer_torque_limits(apply_torque, apply_torque_last, driver_torque, LIMITS):
 
   # limits due to driver torque
-  driver_max_torque = LIMITS.STEER_MAX + driver_torque * 30
-  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 30
+  driver_max_torque = LIMITS.STEER_MAX + driver_torque * 10
+  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 10
   max_steer_allowed = max(min(LIMITS.STEER_MAX, driver_max_torque), 0)
   min_steer_allowed = min(max(-LIMITS.STEER_MAX, driver_min_torque), 0)
   apply_torque = clip(apply_torque, min_steer_allowed, max_steer_allowed)
@@ -73,7 +73,8 @@ class CarController():
 
     # steer
     new_steer = int(round(actuators.steer * self.params.STEER_MAX))
-    apply_steer = apply_proton_steer_torque_limits(new_steer, self.last_steer, 0, self.params)
+    apply_steer = apply_proton_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorque, self.params)
+    
     self.steer_rate_limited = (new_steer != apply_steer) and (apply_steer != 0)
 
     # stock Lane Departure Prevention (blue line, LKS Auxiliary mode)
