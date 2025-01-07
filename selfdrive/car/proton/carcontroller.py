@@ -18,7 +18,11 @@ def apply_proton_steer_torque_limits(apply_torque, apply_torque_last, driver_tor
 
   # limits due to driver torque
   driver_max_torque = LIMITS.STEER_MAX + driver_torque * 0
+<<<<<<< HEAD
   driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 12
+=======
+  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 13
+>>>>>>> 5d18d524 (Update carcontroller.py)
   max_steer_allowed = max(min(LIMITS.STEER_MAX, driver_max_torque), 0)
   min_steer_allowed = min(max(-LIMITS.STEER_MAX, driver_min_torque), 0)
   apply_torque = clip(apply_torque, min_steer_allowed, max_steer_allowed)
@@ -41,8 +45,41 @@ class CarControllerParams():
     assert(len(CP.lateralParams.torqueV) == 1)
 
     # for torque limit calculation
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
     self.STEER_DELTA_UP = 20                      # torque increase per refresh, 0.8s to max
+=======
+    self.STEER_DELTA_UP = 65                      # torque increase per refresh, 0.8s to max
+>>>>>>> bbf85fc4 (Messing around)
     self.STEER_DELTA_DOWN = 30                    # torque decrease per refresh
+=======
+    self.STEER_DELTA_UP = 55                      # torque increase per refresh, 0.8s to max
+=======
+    self.STEER_DELTA_UP = 60                      # torque increase per refresh, 0.8s to max
+>>>>>>> 4529dfdd (Messing around)
+    self.STEER_DELTA_DOWN = 35                    # torque decrease per refresh
+>>>>>>> cb683aa4 (Messing around)
+=======
+    self.STEER_DELTA_UP = 75                      # torque increase per refresh, 0.8s to max
+    self.STEER_DELTA_DOWN = 60                    # torque decrease per refresh
+>>>>>>> 37187265 (Messing around)
+=======
+    self.STEER_DELTA_UP = 70                      # torque increase per refresh, 0.8s to max
+    self.STEER_DELTA_DOWN = 45                    # torque decrease per refresh
+>>>>>>> c8254bb1 (Messing around)
+=======
+    self.STEER_DELTA_UP = 65                      # torque increase per refresh, 0.8s to max
+    self.STEER_DELTA_DOWN = 35                    # torque decrease per refresh
+>>>>>>> 60717f84 (Messing around)
+=======
+    self.STEER_DELTA_UP = 70                      # torque increase per refresh, 0.8s to max
+    self.STEER_DELTA_DOWN = 40                    # torque decrease per refresh
+>>>>>>> 5d18d524 (Update carcontroller.py)
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
