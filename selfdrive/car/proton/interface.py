@@ -27,7 +27,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerRateCost = 0.1                #steerRateCost lower is more reactive and higher is slower to react. Adjusting steerRateCost will affect how eager the car is to make sudden direction changes. Lower cost == more eager
     ret.steerLimitTimer = 0.1              # time before steerLimitAlert is issued
     ret.steerControlType = car.CarParams.SteerControlType.torque
-    ret.steerActuatorDelay = 0.00          # Steering wheel actuator delay in seconds
+    ret.steerActuatorDelay = 0.10          # Steering wheel actuator delay in seconds
 
     ret.lateralTuning.init('pid')
     ret.enableGasInterceptor = 0x201 in fingerprint[0] or 0x401 in fingerprint[0]
