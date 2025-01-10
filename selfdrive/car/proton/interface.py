@@ -24,7 +24,7 @@ class CarInterface(CarInterfaceBase):
     ret.enableApgs = False                 # advanced parking guidance system
     ret.enableDsu = False                  # driving support unit
 
-    ret.steerRateCost = 0.1                # Lateral MPC cost on steering rate, higher value = sharper turn #steerRateCost lower is more reactive and higher is slower to react
+    ret.steerRateCost = 0.1                #steerRateCost lower is more reactive and higher is slower to react. Adjusting steerRateCost will affect how eager the car is to make sudden direction changes. Lower cost == more eager
     ret.steerLimitTimer = 0.1              # time before steerLimitAlert is issued
     ret.steerControlType = car.CarParams.SteerControlType.torque
     ret.steerActuatorDelay = 0.00          # Steering wheel actuator delay in seconds
