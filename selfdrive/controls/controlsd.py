@@ -62,7 +62,7 @@ class Controls:
    return (self.sm.frame - frame_type) * DT_CTRL
 
   def reduce_steer(self, steer, steeringAngle, CS, resume_diff):
-    end_time = 0.5 # The time where the steering becomes 100% again
+    end_time = 1.0 # The time where the steering becomes 100% again
     if resume_diff >= end_time:
       return steer, steeringAngle
 
