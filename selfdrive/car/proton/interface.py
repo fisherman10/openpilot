@@ -24,10 +24,10 @@ class CarInterface(CarInterfaceBase):
     ret.enableApgs = False                 # advanced parking guidance system
     ret.enableDsu = False                  # driving support unit
 
-    ret.steerRateCost = 0.7                #steerRateCost lower is more reactive and higher is slower to react. Adjusting steerRateCost will affect how eager the car is to make sudden direction changes. Lower cost == more eager
+    ret.steerRateCost = 0.5               #steerRateCost lower is more reactive and higher is slower to react. Adjusting steerRateCost will affect how eager the car is to make sudden direction changes. Lower cost == more eager
     ret.steerLimitTimer = 0.1              # time before steerLimitAlert is issued
     ret.steerControlType = car.CarParams.SteerControlType.torque
-    ret.steerActuatorDelay = 0.00          # Steering wheel actuator delay in seconds
+    ret.steerActuatorDelay = 0.5          # Steering wheel actuator delay in seconds
 
     ret.lateralTuning.init('pid')
     ret.enableGasInterceptor = 0x201 in fingerprint[0] or 0x401 in fingerprint[0]
@@ -35,7 +35,7 @@ class CarInterface(CarInterfaceBase):
 
     if candidate == CAR.X50:
       ret.wheelbase = 2.6
-      ret.steerRatio = 18.00
+      ret.steerRatio = 16.00
       ret.centerToFront = ret.wheelbase * 0.44
       tire_stiffness_factor = 0.9871
       ret.mass = 1370. + STD_CARGO_KG
@@ -46,8 +46,8 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kpBP = [0., 15., 25., 35., 40.]
       ret.lateralTuning.pid.kpV = [0.10, 0.19, 0.23, 0.28, 0.30]
       ret.lateralTuning.pid.kiBP = [0., 20., 25., 30., 40.]
-      ret.lateralTuning.pid.kiV = [0.01, 0.01, 0.035, 0.035, 0.035]
-      ret.lateralTuning.pid.kf = 0.000098000000
+      ret.lateralTuning.pid.kiV = [0.02, 0.02, 0.030, 0.030, 0.030]
+      ret.lateralTuning.pid.kf = 0.000099000000
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
       ret.longitudinalTuning.kpV = [0, 0, 0]
