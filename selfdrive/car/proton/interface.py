@@ -25,9 +25,9 @@ class CarInterface(CarInterfaceBase):
     ret.enableDsu = False                  # driving support unit
 
     ret.steerRateCost = 0.99               #steerRateCost lower is more reactive and higher is slower to react. Adjusting steerRateCost will affect how eager the car is to make sudden direction changes. Lower cost == more eager
-    ret.steerLimitTimer = 0.1            # time before steerLimitAlert is issued
+    ret.steerLimitTimer = 0.05            # time before steerLimitAlert is issued
     ret.steerControlType = car.CarParams.SteerControlType.torque
-    ret.steerActuatorDelay = 0.4         # Steering wheel actuator delay in seconds
+    ret.steerActuatorDelay = 0.2         # Steering wheel actuator delay in seconds
 
     ret.lateralTuning.init('pid')
     ret.enableGasInterceptor = 0x201 in fingerprint[0] or 0x401 in fingerprint[0]
@@ -35,7 +35,7 @@ class CarInterface(CarInterfaceBase):
 
     if candidate == CAR.X50:
       ret.wheelbase = 2.6
-      ret.steerRatio = 15.00
+      ret.steerRatio = 15.50
       ret.centerToFront = ret.wheelbase * 0.44
       tire_stiffness_factor = 0.9871
       ret.mass = 1370. + STD_CARGO_KG
@@ -47,7 +47,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kpV = [0.10, 0.18, 0.22, 0.28, 0.29]
       ret.lateralTuning.pid.kiBP = [0., 20., 25., 30., 40.]
       ret.lateralTuning.pid.kiV = [0.013, 0.023, 0.038, 0.038, 0.038]
-      ret.lateralTuning.pid.kf = 0.0000975000000
+      ret.lateralTuning.pid.kf = 0.0000973000000
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
       ret.longitudinalTuning.kpV = [0, 0, 0]
