@@ -38,6 +38,26 @@ class Dir(Enum):
   RIGHT = auto()
 
 class DesireHelper:
+  def is_road_edge_blinker(self, carstate, md):
+    if md is None: return False
+
+    # road_edge_stat calculation adapted from
+    # https://github.com/kisapilot/openpilot/blob/93c8046/selfdrive/controls/lib/desire_helper.py
+
+    # WARNING: No threshold can determine all road edges correctly. Driver check is still required.
+    edge_threshold = 0.475  # Higher value filters out low-confidence road edges
+    left_edge_prob = max(0.0, min(1.0 - md.roadEdgeStds[0], 1.0))
+    right_edge_prob = max(0.0, min(1.0 - md.roadEdgeStds[1], 1.0))
+    left_nearside_prob, right_nearside_prob = md.laneLineProbs[0], md.laneLineProbs[3]
+
+    if right_edge_prob > edge_threshold and right_nearside_prob < 0.2 and left_nearside_prob >= right_nearside_prob:
+      road_edge_stat = Dir.RIGHT
+    elif left_edge_prob > edge_threshold and left_nearside_prob < 0.2 and right_nearside_prob >= left_nearside_prob:
+      road_edge_stat = Dir.LEFT
+    else:
+      return False
+    return (carstate.leftBlinker and road_edge_stat == Dir.LEFT) or (carstate.rightBlinker and road_edge_stat == Dir.RIGHT)
+
   def __init__(self):
     self.lane_change_state = LaneChangeState.off
     self.lane_change_direction = LaneChangeDirection.none
@@ -46,13 +66,12 @@ class DesireHelper:
     self.keep_pulse_timer = 0.0
     self.last_alc_cancel = 0
     self.last_blinker_on = 0
-    self.prev_one_blinker = False
     self.prev_blinker = None # Handle direction change
     self.desire = log.LateralPlan.Desire.none
     self.is_alc_enabled = Params().get_bool("IsAlcEnabled")
     self.blinker_below_lane_change_speed = False
 
-  def update(self, carstate, active, lane_change_prob):
+  def update(self, carstate, active, lane_change_prob, md=None):
     current_time = time.monotonic()
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = carstate.vEgo < LANE_CHANGE_SPEED_MIN
@@ -63,14 +82,15 @@ class DesireHelper:
     blinker_dir_changed = ((self.prev_blinker == Dir.LEFT and carstate.rightBlinker) or
                            (self.prev_blinker == Dir.RIGHT and carstate.leftBlinker))
 
-    if one_blinker and not self.prev_one_blinker:
+    ready_for_lane_change = active and self.is_alc_enabled and not carstate.lkaDisabled and self.lane_change_timer <= LANE_CHANGE_TIME_MAX
+
+    if one_blinker and not self.prev_blinker != None:
       self.last_blinker_on = current_time # Record time of the last blinker on
       self.blinker_below_lane_change_speed = below_lane_change_speed # Check if blinker was on below lane change speed
     elif not one_blinker:
       self.blinker_below_lane_change_speed = False
 
-    # If ALC is disabled or LKA is disabled, do not start Assisted Lane Change.
-    if not self.is_alc_enabled or not active or carstate.lkaDisabled or self.lane_change_timer > LANE_CHANGE_TIME_MAX:
+    if not ready_for_lane_change:
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
 
@@ -87,12 +107,12 @@ class DesireHelper:
       self.last_alc_cancel = current_time
 
     else:
-      wait_for_delay = current_time - self.last_alc_cancel < ALC_CANCEL_DELAY
-      blinker_length_enough = round(current_time - self.last_blinker_on, 2) > 0.20
+      can_start_lane_change = (one_blinker and not below_lane_change_speed and (current_time - self.last_alc_cancel >= ALC_CANCEL_DELAY)
+                               and not self.is_road_edge_blinker(carstate, md))
 
       # LaneChangeState.off
-      if self.lane_change_state == LaneChangeState.off and one_blinker and blinker_length_enough \
-         and not below_lane_change_speed and not wait_for_delay and not self.blinker_below_lane_change_speed:
+      if self.lane_change_state == LaneChangeState.off and can_start_lane_change \
+          and not self.blinker_below_lane_change_speed and round(current_time - self.last_blinker_on, 2) > 0.20:
         self.lane_change_state = LaneChangeState.preLaneChange
         self.lane_change_ll_prob = 1.0
 
@@ -105,7 +125,7 @@ class DesireHelper:
                          ((carstate.steeringTorque > 0 and self.lane_change_direction == LaneChangeDirection.left) or
                           (carstate.steeringTorque < 0 and self.lane_change_direction == LaneChangeDirection.right))
 
-        if not one_blinker or below_lane_change_speed:
+        if not can_start_lane_change:
           self.lane_change_state = LaneChangeState.off
         elif torque_applied and not blindspot_detected:
           self.lane_change_state = LaneChangeState.laneChangeStarting
@@ -126,7 +146,7 @@ class DesireHelper:
 
         if self.lane_change_ll_prob > 0.99:
           self.lane_change_direction = LaneChangeDirection.none
-          if one_blinker and not wait_for_delay:
+          if can_start_lane_change:
             self.lane_change_state = LaneChangeState.preLaneChange
           else:
             self.lane_change_state = LaneChangeState.off
@@ -137,8 +157,6 @@ class DesireHelper:
       self.lane_change_timer += DT_MDL
 
     self.prev_blinker = None if not one_blinker else (Dir.LEFT if carstate.leftBlinker else Dir.RIGHT)
-    self.prev_one_blinker = one_blinker
-
     self.desire = DESIRES[self.lane_change_direction][self.lane_change_state]
 
     # Send keep pulse once per second during LaneChangeStart.preLaneChange
