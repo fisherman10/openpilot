@@ -25,21 +25,12 @@ class CarState(CarStateBase):
     can_define = CANDefine(DBC[CP.carFingerprint]['pt'])
     self.shifter_values = can_define.dv["TRANSMISSION"]['GEAR']
     self.set_distance_values = can_define.dv['PCM_BUTTONS']['SET_DISTANCE']
-    self.is_cruise_latch = False
-    self.acc_req = False
-    self.hand_on_wheel_warning = False
-    self.hand_on_wheel_warning_2 = False
-    self.is_icc_on = False
-    self.prev_angle = 0
 
-    f = Features()
-    self.mads = f.has("StockAcc")
-    self.is_alc_enabled = Params().get_bool("IsAlcEnabled")
-
+    self.lks_audio = None
+    self.lks_tactile = None
+    self.lks_assist_mode = 0
     self.lks_aux = 0
-    self.lks_audio = 0
-    self.lks_tactile = 0
-    self.lks_enable_main = 0
+    self.lka_enable = 0
     self.stock_ldw = 0
     self.stock_ldp_left = 0
     self.stock_ldp_right = 0
@@ -52,6 +43,18 @@ class CarState(CarStateBase):
     self.blinker_on_alc_active = False
     self.blinker_start_time = 0
 
+    self.is_cruise_latch = False
+    self.acc_req = False
+    self.hand_on_wheel_warning = False
+    self.hand_on_wheel_warning_2 = False
+    self.is_icc_on = False
+    self.prev_angle = 0
+    self.res_btn_pressed = False
+
+    f = Features()
+    self.mads = f.has("StockAcc")
+    self.is_alc_enabled = Params().get_bool("IsAlcEnabled")
+
   def set_cur_blinker(self, alc_not_active):
     """Reset time and set cur_blinker"""
     self.blinker_start_time = time()
@@ -61,19 +64,11 @@ class CarState(CarStateBase):
   def update(self, cp):
     ret = car.CarState.new_message()
 
-    self.lks_aux = cp.vl["ADAS_LKAS"]["STOCK_LKS_AUX"]
-    self.lks_audio = cp.vl["ADAS_LKAS"]["LKS_WARNING_AUDIO"]
-    self.lks_tactile = cp.vl["ADAS_LKAS"]["LKS_WARNING_TACTILE"]
-    self.lks_enable_main = cp.vl["ADAS_LKAS"]["LKS_ENABLE_MAIN"]
     self.stock_ldp_cmd = cp.vl["ADAS_LKAS"]["STEER_CMD"]
     self.stock_ldw = cp.vl["ADAS_LKAS"]["LKS_LDW"]
     self.steer_dir = cp.vl["ADAS_LKAS"]["STEER_DIR"]
     self.stock_ldp_left = bool(cp.vl["LKAS"]["STEER_REQ_LEFT"])
     self.stock_ldp_right = bool(cp.vl["LKAS"]["STEER_REQ_RIGHT"])
-
-    self.leadDistance = cp.vl["ADAS_LEAD_DETECT"]['LEAD_DISTANCE']
-    # If cruise mode is ICC, make bukapilot control steering so it won't disengage.
-    ret.lkaDisabled = not (bool(cp.vl["ADAS_LKAS"]["LKS_ENABLE"]) or self.is_icc_on)
 
     ret.wheelSpeeds = self.get_wheel_speeds(
       cp.vl["WHEEL_SPEED"]['WHEELSPEED_F'],
@@ -125,7 +120,11 @@ class CarState(CarStateBase):
     ret.steerError = False
     self.hand_on_wheel_warning = bool(cp.vl["ADAS_LKAS"]["HAND_ON_WHEEL_WARNING"])
     self.hand_on_wheel_warning_2 = bool(cp.vl["ADAS_LKAS"]["WHEEL_WARNING_CHIME"])
+    self.leadDistance = cp.vl["ADAS_LEAD_DETECT"]["LEAD_DISTANCE"]
     self.is_icc_on = bool(cp.vl["PCM_BUTTONS"]["ICC_ON"])
+    self.lka_enable = bool(cp.vl["ADAS_LKAS"]["LKA_ENABLE"])
+    # If cruise mode is ICC, make bukapilot control steering so it won't disengage.
+    ret.lkaDisabled = not self.lka_enable and not self.is_icc_on
 
     ret.vEgoCluster = ret.vEgo * HUD_MULTIPLIER
 
@@ -138,6 +137,7 @@ class CarState(CarStateBase):
 
     distance_val = int(cp.vl["PCM_BUTTONS"]['SET_DISTANCE'])
     ret.cruiseState.setDistance = self.parse_set_distance(self.set_distance_values.get(distance_val, None))
+    self.res_btn_pressed = bool(cp.vl["ACC_BUTTONS"]["RES_BUTTON"])
 
     # engage and disengage logic
     if self.mads:
@@ -198,6 +198,19 @@ class CarState(CarStateBase):
       # used for lane change so its okay for the chime to work on both side.
       ret.leftBlindspot = bool(cp.vl["BSM_ADAS"]["LEFT_APPROACH"]) or bool(cp.vl["BSM_ADAS"]["LEFT_APPROACH_WARNING"])
       ret.rightBlindspot = bool(cp.vl["BSM_ADAS"]["RIGHT_APPROACH"]) or bool(cp.vl["BSM_ADAS"]["RIGHT_APPROACH_WARNING"])
+
+    """
+    Lane Keep Assist (LKA)
+    Warning Only:         LKS Assist True,  Auxiliary False
+    Departure Prevention: LKS Assist True,  Auxiliary True
+    Centering Control:    LKS Assist False, Auxiliary False
+    """
+    # LKS audio and tactile initialised to None, ensure they are read last
+    self.lks_assist_mode = cp.vl["ADAS_LKAS"]["LKS_ASSIST_MODE"]
+    self.lks_aux = cp.vl["ADAS_LKAS"]["STOCK_LKS_AUX"]
+    self.lks_audio = cp.vl["ADAS_LKAS"]["LKS_WARNING_AUDIO"]
+    self.lks_tactile = cp.vl["ADAS_LKAS"]["LKS_WARNING_TACTILE"]
+
     return ret
 
 
@@ -205,6 +218,7 @@ class CarState(CarStateBase):
   def get_can_parser(CP):
     signals = [
       # sig_name, sig_address, default
+      ("RES_BUTTON", "ACC_BUTTONS", 0),
       ("LEAD_DISTANCE", "ADAS_LEAD_DETECT", 0.),
       ("WHEELSPEED_F", "WHEEL_SPEED", 0.),
       ("WHEELSPEED_B", "WHEEL_SPEED", 0.),
@@ -244,14 +258,14 @@ class CarState(CarStateBase):
       ("STOCK_LKS_AUX", "ADAS_LKAS", 0),
       ("LKS_WARNING_AUDIO", "ADAS_LKAS", 0),
       ("LKS_WARNING_TACTILE", "ADAS_LKAS", 0),
-      ("LKS_ENABLE_MAIN", "ADAS_LKAS", 1),
+      ("LKS_ASSIST_MODE", "ADAS_LKAS", 1),
       ("STEER_DIR", "ADAS_LKAS", 1),
       ("LKS_LDW", "ADAS_LKAS", 1),
       ("STEER_CMD", "ADAS_LKAS", 1),
       ("LANE_DEPARTURE_WARNING_RIGHT", "LKAS", 1),
       ("LANE_DEPARTURE_WARNING_LEFT", "LKAS", 1),
       ("STOCK_FCW_TRIGGERED", "FCW", 1),
-      ("LKS_ENABLE", "ADAS_LKAS", 1),
+      ("LKA_ENABLE", "ADAS_LKAS", 1),
       ("STEER_REQ_RIGHT", "LKAS", 0),
       ("STEER_REQ_LEFT", "LKAS", 0),
     ]
