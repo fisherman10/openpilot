@@ -50,7 +50,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kf = 0.000094304000000000
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
-      ret.longitudinalTuning.kpV = [0, 0, 0]
+      ret.longitudinalTuning.kpV = [2.0, 2.0, 2.0]
       ret.longitudinalActuatorDelayLowerBound = 0.42
       ret.longitudinalActuatorDelayUpperBound = 0.60
 
@@ -71,7 +71,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kf = 0.0000015
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
-      ret.longitudinalTuning.kpV = [0, 0, 0]
+      ret.longitudinalTuning.kpV = [2.0, 2.0, 2.0]
       ret.longitudinalActuatorDelayLowerBound = 0.42
       ret.longitudinalActuatorDelayUpperBound = 0.60
 
@@ -92,7 +92,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kf = 0.0000015
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
-      ret.longitudinalTuning.kpV = [0, 0, 0]
+      ret.longitudinalTuning.kpV = [2.0, 2.0, 2.0]
       ret.longitudinalActuatorDelayLowerBound = 0.42
       ret.longitudinalActuatorDelayUpperBound = 0.60
 
@@ -114,7 +114,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kf = 0.000004
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
-      ret.longitudinalTuning.kpV = [0, 0, 0]
+      ret.longitudinalTuning.kpV = [2.0, 2.0, 2.0]
       ret.longitudinalActuatorDelayLowerBound = 0.42
       ret.longitudinalActuatorDelayUpperBound = 0.60
 
@@ -126,7 +126,7 @@ class CarInterface(CarInterfaceBase):
     ret.longitudinalTuning.deadzoneBP = [0., 8.05]
     ret.longitudinalTuning.deadzoneV = [0, 0]
     ret.longitudinalTuning.kiBP = [0., 5., 20.]
-    ret.longitudinalTuning.kiV = [0, 0, 0]
+    ret.longitudinalTuning.kiV = [0.1, 0.1, 0.1]
 
     ret.minEnableSpeed = -1
     ret.enableBsm = True
