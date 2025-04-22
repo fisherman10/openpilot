@@ -66,7 +66,7 @@ class CarController():
 
     # steer
     new_steer = round(actuators.steer * self.params.STEER_MAX)
-    apply_steer = apply_proton_steer_torque_limits(new_steer, self.last_steer, 0, self.params)
+    apply_steer = apply_proton_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorque, self.params)
     self.steer_rate_limited = (apply_steer != 0) and (new_steer != apply_steer)
 
     cs_out = CS.out
