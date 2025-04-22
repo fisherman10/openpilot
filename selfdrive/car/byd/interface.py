@@ -84,7 +84,8 @@ class CarInterface(CarInterfaceBase):
   def apply(self, c):
 
     isLdw = c.hudControl.leftLaneDepart or c.hudControl.rightLaneDepart
-
-    can_sends = self.CC.update(c.enabled, self.CS, self.frame, c.actuators, c.hudControl.leadVisible, c.hudControl.rightLaneVisible, c.hudControl.leftLaneVisible, c.cruiseControl.cancel, isLdw, c.laneActive)
+    can_sends = self.CC.update(c.enabled, self.CS, self.frame, c.actuators, c.hudControl.leadVisible, c.hudControl.rightLaneVisible, c.hudControl.leftLaneVisible, c.cruiseControl.cancel, isLdw)
+    
+    
     self.frame += 1
     return can_sends
