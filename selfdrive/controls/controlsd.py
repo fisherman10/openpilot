@@ -521,7 +521,7 @@ class Controls:
                      and self.is_alc_enabled)
 
     # Handle lane change events after ALC check
-    if is_alc_active and (not lc_off or lane_change_speed_enough) and not CS.lkaDisabled:
+    if is_alc_active and (not lc_off or lane_change_speed_enough):
       if one_blinker and ((rightBlinker and CS.rightBlindspot) or (leftBlinker and CS.leftBlindspot)):
         self.events.add(EventName.laneChangeBlocked)
 
@@ -545,7 +545,7 @@ class Controls:
       actuators.accel, actuators.speed = self.LoC.update(active, CS, self.CP, self.sm['longitudinalPlan'], pid_accel_limits)
 
       # Steering PID loop and lateral MPC
-      self.lat_active = lat_active = active and not ((one_blinker and not is_alc_active) or CS.standstill or CS.lkaDisabled) \
+      self.lat_active = lat_active = active and not ((one_blinker and not is_alc_active) or CS.standstill) \
                         and vEgo > self.CP.minSteerSpeed and not CS.steerWarning and not CS.steerError
       desired_curvature, desired_curvature_rate = get_lag_adjusted_curvature(self.CP, vEgo,
                                                                              lat_plan.psis,
@@ -567,7 +567,7 @@ class Controls:
         lac_log.output = steer
         lac_log.saturated = abs(steer) >= 0.9
 
-    if one_blinker and active and not (lat_active or CS.standstill or CS.lkaDisabled) and self.is_alc_enabled:
+    if one_blinker and active and not (lat_active or CS.standstill) and self.is_alc_enabled:
       self.events.add(EventName.belowLaneChangeSpeed)
 
     # If steer not active
