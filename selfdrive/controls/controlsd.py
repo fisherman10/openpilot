@@ -58,7 +58,7 @@ IGNORED_SAFETY_MODES = [SafetyModel.silent, SafetyModel.noOutput]
 CSID_MAP = {"0": EventName.roadCameraError, "1": EventName.wideRoadCameraError, "2": EventName.driverCameraError}
 
 def reduce_steer(steer, steeringAngle, CSAngleDeg, resume_diff):
-  if resume_diff >= (end_time := 1.75): # The time where the steering becomes 100% again
+  if resume_diff >= (end_time := 0.5): # The time where the steering becomes 100% again
     return steer, steeringAngle
 
   # Non-linear increment equation
