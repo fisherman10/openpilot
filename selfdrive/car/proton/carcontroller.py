@@ -14,7 +14,7 @@ def apply_proton_steer_torque_limits(apply_torque, apply_torque_last, driver_tor
 
   # limits due to driver torque
   driver_max_torque = LIMITS.STEER_MAX + driver_torque * 0
-  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 12
+  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 10
   max_steer_allowed = clip(driver_max_torque, 0, LIMITS.STEER_MAX)
   min_steer_allowed = clip(driver_min_torque, -LIMITS.STEER_MAX, 0)
   apply_torque = clip(apply_torque, min_steer_allowed, max_steer_allowed)
@@ -38,7 +38,7 @@ class CarControllerParams():
 
     # for torque limit calculation
     self.STEER_DELTA_UP = 65                      # torque increase per refresh, 0.8s to max
-    self.STEER_DELTA_DOWN = 35                    # torque decrease per refresh
+    self.STEER_DELTA_DOWN = 40                    # torque decrease per refresh
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
