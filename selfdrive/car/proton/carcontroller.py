@@ -65,9 +65,10 @@ class CarController():
     lat_active = enabled
 
     # steer
-    new_steer = round(actuators.steer * self.params.STEER_MAX)
+    new_steer = int(round(actuators.steer * self.params.STEER_MAX))
     apply_steer = apply_proton_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorque, self.params)
-    self.steer_rate_limited = (apply_steer != 0) and (new_steer != apply_steer)
+    
+     self.steer_rate_limited = (new_steer != apply_steer) and (apply_steer != 0)
 
     cs_out = CS.out
     # Stock Lane Departure Prevention / Centering Control (LKS Auxiliary / Blue line)
