@@ -9,7 +9,7 @@ export SKIP_FW_QUERY=0
 #export FINGERPRINT="PROTON S70"
 
 if [ -z "$AGNOS_VERSION" ]; then
-  export AGNOS_VERSION="9.7"
+  export AGNOS_VERSION="11.3"
 fi
 
 export STAGING_ROOT="/data/safe_staging"
