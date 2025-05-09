@@ -1,6 +1,7 @@
 #include "system/sensord/sensors/lis2mdl_magn.h"
 
 #include <cassert>
+#include <math.h>
 
 #include "common/swaglog.h"
 #include "common/timing.h"
@@ -16,7 +17,7 @@ int LIS2MDL_Magn::init() {
   if (ret < 0) {
     goto fail;
   }
-  
+
   ret = set_register(LIS2MDL_REG_CFG_REG_B, LIS2MDL_LOW_PASS_ON);
   if (ret < 0) {
     goto fail;
@@ -57,10 +58,16 @@ bool LIS2MDL_Magn::get_event(MessageBuilder &msg, uint64_t ts) {
   int len = read_register(LIS2MDL_REG_MAGN_DATA, buffer, sizeof(buffer));
   assert(len == 6);
 
-  float scale = 1.5; // sensitivity scale factor from datasheet
-  float x = -read_16_bit(buffer[5], buffer[4]) * scale;
-  float y = -read_16_bit(buffer[1], buffer[0]) * scale;
-  float z = read_16_bit(buffer[3], buffer[2]) * scale;
+  // NED
+  float scale_uT_per_lsb = 0.15f; // sensitivity scale factor from datasheet
+  float x = -read_16_bit(buffer[2], buffer[3]) * scale_uT_per_lsb; // N
+  float y = read_16_bit(buffer[0], buffer[1]) * scale_uT_per_lsb;  // E
+  float z = -read_16_bit(buffer[4], buffer[5]) * scale_uT_per_lsb; // D
+
+  // Convert to degrees
+  //float heading_rad = atan2f(y, x);  // atan2 returns angle in radians
+  //float heading_deg = heading_rad * (180.0f / M_PI);
+  //printf("Compass heading: %.2f°\n", heading_deg);
 
   auto event = msg.initEvent().initMagnetometer();
   event.setSource(cereal::SensorEventData::SensorSource::LIS2MDL);

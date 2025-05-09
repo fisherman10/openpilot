@@ -1,13 +1,13 @@
 #include "system/sensord/sensors/icm42670_gyro.h"
 
 #include <cassert>
-#include <cmath> 
+#include <cmath>
 
 #include "common/swaglog.h"
 #include "common/timing.h"
 #include "common/util.h"
 
-#define DEG2RAD(x) ((x) * M_PI / 180.0) 
+#define DEG2RAD(x) ((x) * M_PI / 180.0)
 
 ICM42670_Gyro::ICM42670_Gyro(I2CBus *bus) : I2CSensor(bus) {}
 
@@ -55,9 +55,9 @@ bool ICM42670_Gyro::get_event(MessageBuilder &msg, uint64_t ts) {
   assert(len == 6);
 
   float scale = 131; // sensitivity scale factor from datasheet
-  float x = -DEG2RAD(read_16_bit(buffer[5], buffer[4]) / scale);
-  float y = -DEG2RAD(read_16_bit(buffer[1], buffer[0]) / scale);
-  float z = DEG2RAD(read_16_bit(buffer[3], buffer[2]) / scale);
+  float x = -DEG2RAD(read_16_bit(buffer[5], buffer[4]) / scale) - 0.0945f;
+  float y = DEG2RAD(read_16_bit(buffer[1], buffer[0]) / scale) + 0.1855f;
+  float z = -DEG2RAD(read_16_bit(buffer[3], buffer[2]) / scale) - 0.1183f;
 
   auto event = msg.initEvent().initGyroscope();
   event.setSource(cereal::SensorEventData::SensorSource::ICM42670);

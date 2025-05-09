@@ -1,10 +1,13 @@
 #include "system/sensord/sensors/icm42670_accel.h"
 
 #include <cassert>
+#include <math.h>
 
 #include "common/swaglog.h"
 #include "common/timing.h"
 #include "common/util.h"
+
+#define ROT_ANGLE_RAD 0.4082f
 
 ICM42670_Accel::ICM42670_Accel(I2CBus *bus) : I2CSensor(bus) {}
 
@@ -16,7 +19,7 @@ int ICM42670_Accel::init() {
   if (ret < 0) {
     goto fail;
   }
-  
+
   ret = set_register(ICM42670_REG_ACCEL_CONFIG0, ICM42670_CONFIG_ACCEL_2_G | ICM42670_CONFIG_RATE_200_Hz);
   if (ret < 0) {
     goto fail;
@@ -46,10 +49,16 @@ bool ICM42670_Accel::get_event(MessageBuilder &msg, uint64_t ts) {
   int len = read_register(ICM42670_REG_ACCEL_DATA_X1, buffer, sizeof(buffer));
   assert(len == 6);
 
-  float accel_scale = 9.81 / 16384; // sensitivity scale factor from datasheet
+  double accel_scale = 9.81 / 16384; // sensitivity scale factor from datasheet
   float x = -read_16_bit(buffer[5], buffer[4]) * accel_scale;
-  float y = -read_16_bit(buffer[1], buffer[0]) * accel_scale;
-  float z = read_16_bit(buffer[3], buffer[2]) * accel_scale;
+  float y = read_16_bit(buffer[1], buffer[0]) * accel_scale;
+  float z = -read_16_bit(buffer[3], buffer[2]) * accel_scale;
+
+  // rotate the frame along the y axis
+  double cos_theta = cos(-ROT_ANGLE_RAD);
+  double sin_theta = sin(-ROT_ANGLE_RAD);
+  x = (cos_theta * x - sin_theta * z) * 1.017f; // TODO: find out why offset needed
+  z = (sin_theta * x + cos_theta * z) * 1.177f;
 
   auto event = msg.initEvent().initAccelerometer();
   event.setSource(cereal::SensorEventData::SensorSource::ICM42670);
