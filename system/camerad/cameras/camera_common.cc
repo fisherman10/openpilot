@@ -95,6 +95,10 @@ void fill_frame_data(cereal::FrameData::Builder &framed, const FrameMetadata &fr
   framed.setTargetGreyFraction(frame_data.target_grey_fraction);
   framed.setProcessingTime(frame_data.processing_time);
   framed.setSensor(cereal::FrameData::ImageSensor::OX03C10);
+
+  std::vector<float> temps = {frame_data.sensor_temp_c};
+  kj::ArrayPtr<const float> temp_array(temps.data(), temps.size());
+  framed.setTemperaturesC(temp_array);
 }
 
 kj::Array<uint8_t> get_raw_frame_image(const CameraBuf *b) {

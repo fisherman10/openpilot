@@ -19,6 +19,9 @@
 #include "media/cam_sync.h"
 #include "common/swaglog.h"
 
+// Special defined
+#define V4L2_CID_X3C_SENSOR_TEMPERATURE (V4L2_CID_USER_BASE + 0x100)
+
 extern ExitHandler do_exit;
 
 void CameraState::camera_map_bufs(MultiCameraState *s) {
@@ -110,6 +113,15 @@ void CameraState::dequeue_buf() {
   ctrl.id = V4L2_CID_EXPOSURE;
   assert(ioctl(ctrl_fd, VIDIOC_G_CTRL, &ctrl) >= 0);
   buf.camera_bufs_metadata[v4l_buf.index].integ_lines = ctrl.value;
+
+  // get temperature sensor
+  ctrl.id = V4L2_CID_X3C_SENSOR_TEMPERATURE;
+  if (ioctl(ctrl_fd, VIDIOC_G_CTRL, &ctrl) >= 0) {
+    // temperature is stored as value in centi-degrees (e.g. 3569 = 35.69°C)
+    buf.camera_bufs_metadata[v4l_buf.index].sensor_temp_c = ctrl.value / 100.0f;
+  } else {
+    buf.camera_bufs_metadata[v4l_buf.index].sensor_temp_c = -999.0f;  // mark as invalid
+  }
 
   assert(ioctl(video_fd, VIDIOC_DQBUF, &v4l_buf) >= 0);
   // queue the index number of the v4l buffer that has just been populated
