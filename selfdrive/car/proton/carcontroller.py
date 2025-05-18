@@ -43,7 +43,7 @@ class CarControllerParams():
     # for torque limit calculation
 
     self.STEER_DELTA_UP = 80                      # torque increase per refresh, 0.8s to max
-    self.STEER_DELTA_DOWN = 80                    # torque decrease per refresh
+    self.STEER_DELTA_DOWN = 50                    # torque decrease per refresh
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
