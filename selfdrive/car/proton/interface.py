@@ -44,10 +44,10 @@ class CarInterface(CarInterfaceBase):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [600]]  #maximum is 600 only. Any more it will disengage and reengage on its own.
 
       ret.lateralTuning.pid.kpBP = [0., 15., 25., 35., 40.]
-      ret.lateralTuning.pid.kpV = [0.05, 0.16, 0.16, 0.18, 0.18]
+      ret.lateralTuning.pid.kpV = [0.03, 0.16, 0.16, 0.19, 0.20]
       ret.lateralTuning.pid.kiBP = [0., 20., 25., 30., 40.]
-      ret.lateralTuning.pid.kiV = [0.04, 0.03, 0.02, 0.01, 0.01]
-      ret.lateralTuning.pid.kf = 0.00009350000000
+      ret.lateralTuning.pid.kiV = [0.03, 0.02, 0.01, 0.01, 0.01]
+      ret.lateralTuning.pid.kf = 0.00009380000000
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
       ret.longitudinalTuning.kpV = [0, 0, 0]
