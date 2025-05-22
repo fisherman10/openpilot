@@ -128,13 +128,15 @@ void CameraState::dequeue_buf() {
   buf.queue(v4l_buf.index);
 
   buf.camera_bufs_metadata[v4l_buf.index].frame_id = v4l_buf.sequence;
-  buf.camera_bufs_metadata[v4l_buf.index].timestamp_sof = static_cast<uint64_t>(v4l_buf.timestamp.tv_sec * 1000000000 + v4l_buf.timestamp.tv_usec * 1000);
-  buf.camera_bufs_metadata[v4l_buf.index].timestamp_eof = static_cast<uint64_t>(v4l_buf.timestamp.tv_sec * 1000000000 + v4l_buf.timestamp.tv_usec * 1000);
+  cap_time = static_cast<uint64_t>(v4l_buf.timestamp.tv_sec * 1000000000 + v4l_buf.timestamp.tv_usec * 1000); 
+  buf.camera_bufs_metadata[v4l_buf.index].timestamp_sof = cap_time;
+  buf.camera_bufs_metadata[v4l_buf.index].timestamp_eof = cap_time;
   // immediately queue after dequeing the buffer
   assert(ioctl(video_fd, VIDIOC_QBUF, &v4l_buf) >= 0);
 }
 
 void cameras_init(VisionIpcServer *v, MultiCameraState *s, cl_device_id device_id, cl_context ctx) {
+
   s->driver_cam.camera_init(s, v, device_id, ctx, VISION_STREAM_DRIVER);
   s->road_cam.camera_init(s, v, device_id, ctx, VISION_STREAM_ROAD);
   s->wide_road_cam.camera_init(s, v, device_id, ctx, VISION_STREAM_WIDE_ROAD);
@@ -144,12 +146,12 @@ void cameras_init(VisionIpcServer *v, MultiCameraState *s, cl_device_id device_i
 
 void cameras_open(MultiCameraState *s) {
   LOG("-- Opening devices");
-  s->wide_road_cam.camera_open(s, 2, !env_disable_wide_road);
-  LOGD("wide road camera opened");
-  s->road_cam.camera_open(s, 1, !env_disable_road);
-  LOGD("road camera opened");
   s->driver_cam.camera_open(s, 0, !env_disable_driver);
   LOGD("driver camera opened");
+  s->road_cam.camera_open(s, 1, !env_disable_road);
+  LOGD("road camera opened");
+  s->wide_road_cam.camera_open(s, 2, !env_disable_wide_road);
+  LOGD("wide road camera opened");
  }
 
 void CameraState::camera_close() {
@@ -198,6 +200,30 @@ void process_road_camera(MultiCameraState *s, CameraState *c, int cnt) {
   s->pm->send(c == &s->road_cam ? "roadCameraState" : "wideRoadCameraState", msg);
 }
 
+
+#define THRESHOLD 10000000
+bool check_timestamp_sync(uint64_t *t1, int len1, uint64_t *t2, int len2) {
+    int i = 0, j = 0;
+
+    while (i < len1 && j < len2) {
+        uint64_t diff = t1[i] > t2[j] ? t1[i] - t2[j] : t2[j] - t1[i];
+        if (diff <= THRESHOLD) {
+            return true;
+        }
+
+        // Move the pointer with smaller timestamp forward
+        if (t1[i] < t2[j]) {
+            i++;
+        } else {
+            j++;
+        }
+    }
+
+    return false; // No match within threshold
+}
+
+#define SYNC_CHECK_LEN 5
+#define SYNC_CHECK_COUNT 40
 void cameras_run(MultiCameraState *s) {
   LOG("-- Starting threads");
   std::vector<std::thread> threads;
@@ -205,9 +231,13 @@ void cameras_run(MultiCameraState *s) {
   if (s->road_cam.enabled) threads.push_back(start_process_thread(s, &s->road_cam, process_road_camera));
   if (s->wide_road_cam.enabled) threads.push_back(start_process_thread(s, &s->wide_road_cam, process_road_camera));
 
-  s->driver_cam.stream_start();
-  s->road_cam.stream_start();
   s->wide_road_cam.stream_start();
+  s->road_cam.stream_start();
+  s->driver_cam.stream_start();
+
+  uint64_t road_cam_ts[SYNC_CHECK_LEN];
+  uint64_t wide_cam_ts[SYNC_CHECK_LEN];
+  int count = 0;
 
   // poll events
   LOG("-- Dequeueing Video events");
@@ -234,16 +264,29 @@ void cameras_run(MultiCameraState *s) {
             break;
           case 1:
             s->road_cam.dequeue_buf();
+            count++;
+            if (count <= (SYNC_CHECK_COUNT + SYNC_CHECK_LEN - 1) && count >= SYNC_CHECK_COUNT) {
+              road_cam_ts[count % SYNC_CHECK_COUNT] = s->road_cam.cap_time;
+            }
             break;
           case 2:
             s->wide_road_cam.dequeue_buf();
+            if (count <= (SYNC_CHECK_COUNT + SYNC_CHECK_LEN - 1) && count >= SYNC_CHECK_COUNT) {
+              wide_cam_ts[count % SYNC_CHECK_COUNT] = s->wide_road_cam.cap_time;
+            }
             break;
         }
+      }
+      // check sync
+      bool synced = check_timestamp_sync(road_cam_ts, SYNC_CHECK_LEN, wide_cam_ts, SYNC_CHECK_LEN);
+      if (!synced && count >= 50) {
+        LOG("Not synced!");
+        //do_exit = true;
       }
     }
   }
 
-  LOG(" ************** STOPPING **************");
+  LOG("************** STOPPING **************");
 
   for (auto &t : threads) t.join();
 
