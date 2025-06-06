@@ -47,7 +47,7 @@ class CarInterface(CarInterfaceBase):
       ret.wheelSpeedFactor = 1.505
 
     elif candidate == CAR.MYVI:
-      ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.12], [0.20]]
+      ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.08], [0.15]]
       ret.lateralTuning.pid.kf = 0.00012
       ret.longitudinalTuning.kpV = [0.5, 0.5, 0.42]
       ret.longitudinalTuning.kiV = [0.04, 0.04, 0.035]

@@ -16,7 +16,7 @@ PUMP_VALS = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0]
 PUMP_RESET_INTERVAL = 1.5
 PUMP_RESET_DURATION = 0.1
 BOOST = 1.4
-BRAKE_M = 1.4
+BRAKE_M = 1.6
 
 class BrakingStatus():
   STANDSTILL_INIT = 0

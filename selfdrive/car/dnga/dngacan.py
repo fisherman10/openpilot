@@ -2,7 +2,6 @@ from openpilot.common.numpy_fast import clip
 from openpilot.common.conversions import Conversions as CV
 
 def create_can_steer_command(packer, steer, steer_req, cnt):
-  print(steer, cnt)
   values = {
     "STEER_REQ": steer_req,
     "STEERING_COUNTER": cnt,
