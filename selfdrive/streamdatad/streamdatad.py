@@ -1,253 +1,274 @@
 #!/usr/bin/env python3
-
 import socket
 import msgpack
-from time import monotonic
+import subprocess
+import psutil
+import threading
+from time import monotonic, sleep
 from openpilot.common.realtime import Ratekeeper
 import cereal.messaging as messaging
 from cereal import log
-from openpilot.system.version import get_version, get_commit, get_short_branch
+from openpilot.system.version import get_version, get_commit, terms_version, training_version
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
 
-BUFFER_SIZE = 1024
+BUFFER_SIZE = 65536   # If buffer too small, SSH keys will not be fully received.
+BIND_IP = "0.0.0.0"   # Bind to all network interfaces, allowing connections from any available network.
 UDP_PORT = 5006
 TCP_PORT = 5007
+WIFI_CONNECT_TIMEOUT_SECONDS = 20 # Timeout for Wi-Fi connection attempts
 params = Params()
+DONGLE_ID = params.get("DongleId").decode("utf-8")
+SM_UPDATE_INTERVAL = 33
 
-def extract_model_data(model_dict):
-  # Extract position and acceleration
-  extracted_data = {
-    "position": model_dict.get("position"),
-    "acceleration": model_dict.get("acceleration")
-  }
+def forget_wifi_network(ssid):
+  if not ssid:
+    return False
+  threading.Thread(daemon=True, target=lambda: subprocess.run(["sudo", "nmcli", "con", "delete", ssid], text=True)).start()
+  return True
 
-  # Flatten laneLines and roadEdges efficiently with single lookup
-  for key in ("laneLines", "roadEdges"):
-    value = model_dict.get(key)
-    if isinstance(value, list):
-      prefix = key[:-1]
-      extracted_data.update((f"{prefix}{i}", item) for i, item in enumerate(value, 1))
+def check_for_updates():
+  subprocess.Popen(["pkill", "-SIGUSR1", "-f", "system.updated.updated"])
 
-  return extracted_data
+def fetch_update():
+  subprocess.Popen(["pkill", "-SIGHUP", "-f", "system.updated.updated"])
 
-def filter_keys(model_dict, keys_to_keep):
-  result = {}
-  for key in keys_to_keep:
-    if key in model_dict:
-      result[key] = model_dict[key]
-      if len(result) == len(keys_to_keep):
-        break
-  return result
-
-def safe_get(key, default_value='', decode_utf8=False, to_float=False, bool_value=False):
-  """
-  Safely retrieves a parameter value while handling exceptions and type conversions.
-  :param params: The params object
-  :param key: The parameter key to retrieve
-  :param default_value: Default value to return in case of an exception
-  :param decode_utf8: Whether to decode the retrieved value as UTF-8
-  :param to_float: Whether to convert the value to float
-  :param bool_value: Whether to retrieve the value as boolean
-  :return: The retrieved value or the default value
-  """
+def extract_model_data(data_dict):
   try:
-    if bool_value:
-      return params.get_bool(key)  # Get boolean value
-    value = params.get(key) or default_value  # Get the value or default
-    if decode_utf8 and value:
-      return value.decode('utf-8')  # Decode UTF-8 if needed
-    if to_float and value:
-      return float(value)  # Convert to float if needed
-    return value  # Return the retrieved or default value
-  except Exception as e:
-    print(f"Exception occurred while retrieving key '{key}': {e}")
-    return default_value  # Return the default value in case of an exception
+    return {key: data_dict[key] for key in ("position", "acceleration", "frameId")} | {
+      f"{key[:-1]}{i}": item for key in ("laneLines", "roadEdges")
+      for i, item in enumerate(data_dict[key], 1)
+    }
+  except Exception:
+    return {}
 
-def safe_put_all(settings_to_put, mapping, non_bool_values=None):
-  """
-  Safely sets multiple parameter values from the settings dictionary.
-  :param settings: The settings dictionary containing the values.
-  :param mapping: A dictionary mapping param keys to their respective settings keys.
-  :param non_bool_values: A set of param keys to be treated as non-boolean.
-  """
-  if non_bool_values is None:
-    non_bool_values = set()  # Default to an empty set if not provided
+def safe_get(key, is_bool=False):
+  """Retrieves a parameter value safely."""
+  try:
+    return params.get_bool(key) if is_bool else params.get(key).decode()
+  except Exception:
+    return False if is_bool else ''
 
-  for param_key, settings_key in mapping.items():
+def safe_put_all(settings_to_put, is_bool=False):
+  """Stores multiple parameters safely."""
+  for param_key, value in settings_to_put.items():
     try:
-      value = settings_to_put[settings_key]  # Retrieve the value from the settings dictionary
-      if param_key in non_bool_values:
-        params.put(param_key, str(value))  # Convert the value to a string and set it
-      else:
-        if not isinstance(value, bool):
-          continue  # Skip if the value is expected to be boolean but isn't
-        params.put_bool(param_key, value)  # Set the value as boolean
-    except KeyError:
-      # Skip if the settings key does not exist
-      pass
+      (params.put_bool if is_bool else params.put)(param_key, value if is_bool else str(value))
     except Exception as e:
-      print(f"Exception occurred while setting param '{param_key}' with value from '{settings_key}': {e}")
+      print(f"Error putting {param_key}: {e}")
 
-def deviceStatus(sm):
-  if sm['peripheralState'].pandaType == log.PandaState.PandaType.unknown:
-    return "error"
-  else: # TODO: Add initialising if alerts.hasSevere from k_alerts
-    return "ready"
+def reset_calibration():
+  params.remove("CalibrationParams")
+  params.remove("LiveTorqueParameters")
+  # Parameters below need to be removed for newer op version
+  # params.remove("LiveParameters")
+  # params.remove("LiveParametersV2")
+  # params.remove("LiveDelay")
 
-def remainingDataUpload(sm):
-  uploader_state = sm['uploaderState']
-  immediate_queue_size = uploader_state.immediateQueueSize
-  raw_queue_size = uploader_state.rawQueueSize
-  return f"{immediate_queue_size + raw_queue_size} MB"
+def do_reboot(state):
+  if state == log.ControlsState.OpenpilotState.disabled:
+    params.put_bool("DoReboot", True)
+
+def update_dict_from_sm(target_dict, sm_subset, keys):
+  try:
+    c = sm_subset.to_dict()
+    for k in keys:
+      target_dict[k] = c[k]
+  except KeyError:
+    pass
 
 class Streamer:
   def __init__(self, sm=None):
-    #self.local_ip = "192.168.100.1"
-    self.local_ip = "0.0.0.0"  # Bind to all network interfaces, allowing connections from any available network.
-    self.ip = None
-    self.requestInfo = False
+    self.udp_send_ip = None
     self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.tcp_conn = None
-    self.sm = sm if sm \
-      else messaging.SubMaster(['modelV2', 'deviceState', 'peripheralState',\
-      'controlsState', 'uploaderState', 'radarState', 'liveCalibration', 'carParams',\
-      'carControl', 'driverStateV2', 'driverMonitoringState', 'carState', 'longitudinalPlan'])
-    self.rk = Ratekeeper(30)  # Ratekeeper for 30 Hz loop
-    self.last_calibration_sent = 0
-
+    self.sm = sm if sm else messaging.SubMaster([
+      'modelV2', 'controlsState', 'radarState', 'liveCalibration',
+      'driverMonitoringState', 'carState', 'longitudinalPlan',
+    ])
+    self.rk = Ratekeeper(25)  # Ratekeeper for 25 Hz loop
+    self.last_periodic_time = 0  # Track last periodic task
+    self.last_1hz_task_time = 0
+    self.local_wlan_ip = None
+    self.active_wlan_ssid = None
+    self.current_wifi_iface_name = None
+    self.wifi_connect_attempt_ssid = None
+    self.wifi_connect_attempt_start_time = None
     self.setup_sockets()
 
-  def check_calibration(self, is_offroad):
-    # Check calibration status and reset if engine on and calibration invalid
-    if not is_offroad and self.sm['liveCalibration'].calStatus in \
-      (log.LiveCalibrationData.Status.invalid, log.LiveCalibrationData.Status.uncalibrated) \
-      and (cur_time := monotonic()) - self.last_calibration_sent > 0.1:
-        # Reset calibration, retry every 0.1 seconds
-        self.last_calibration_sent = cur_time
-        params.remove("CalibrationParams")
-        params.remove("LiveTorqueParameters")
+  def connect_to_wifi(self, ssid, password, cur_time):
+    if not (ssid := ssid.strip()):
+      return False
+    self.wifi_connect_attempt_ssid = ssid
+    self.wifi_connect_attempt_start_time = cur_time
+    cmd = ['dev', 'wifi', 'connect', ssid]
+    if password:
+      cmd.extend(['password', password])
+    if ifname := self.current_wifi_iface_name:
+      cmd.extend(['ifname', ifname])
+    def run_nmcli():
+      sleep(5) # Wait 5 seconds for user to get hotspot/Wi-Fi ready
+      result = subprocess.run(["sudo", "nmcli"] + cmd, text=True, capture_output=True)
+      if "Error: No network with SSID" in result.stderr:
+        print(f"Wi-Fi SSID {ssid} not found, clearing attempt.")
+        self.wifi_connect_attempt_ssid = None
+        self.wifi_connect_attempt_start_time = None
+        return False
+    threading.Thread(target=run_nmcli, daemon=True).start()
+    return True
 
   def setup_sockets(self):
-    local_ip = self.local_ip
-    (udp_sock := self.udp_sock).bind((local_ip, UDP_PORT))
+    (udp_sock := self.udp_sock).bind((BIND_IP, UDP_PORT))
     udp_sock.setblocking(False)
     (tcp_sock := self.tcp_sock).setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Enable reuse for TCP socket
-    tcp_sock.bind((local_ip, TCP_PORT))
+    tcp_sock.bind((BIND_IP, TCP_PORT))
     tcp_sock.listen(1)
     tcp_sock.setblocking(False)
 
-  def send_udp_message(self):
-    if self.ip:
-      (sm := self.sm).update(10) # update every 10 ms
+  def update_wlan_info_async(self):
+    def get_wlan_info():
+      if (interfaces := psutil.net_if_addrs()) and (stats := psutil.net_if_stats()) and "wlan0" in interfaces and stats.get("wlan0", {}).isup:
+        selected_iface = "wlan0"
+      else:
+        selected_iface = next(
+          (iface for iface in interfaces if iface.startswith("wl") and iface != "wlan1" and stats.get(iface, {}).isup and
+           any(a.family == socket.AF_INET for a in interfaces[iface])), None)
+      ip_address = ssid = None
+      if selected_iface:
+        ip_address = next((a.address for a in interfaces[selected_iface] if a.family == socket.AF_INET), None)
+        try:
+          if (result := subprocess.run(
+            ['nmcli', '-t', '-f', 'active,ssid,device', 'dev', 'wifi'], capture_output=True, text=True, timeout=0.1
+          )).returncode == 0 and (output := result.stdout):
+            for line in output.splitlines():
+              if (parts := line.split(':')) and len(parts) >= 3 and parts[0] == 'yes' and parts[2] == selected_iface:
+                ssid = parts[1]
+                break
+        except subprocess.TimeoutExpired:
+          pass
+        except Exception:
+          pass
+      self.local_wlan_ip = ip_address
+      self.active_wlan_ssid = ssid
+      self.current_wifi_iface_name = selected_iface
+    threading.Thread(target=get_wlan_info, daemon=True).start()
 
-      data = extract_model_data(sm['modelV2'].to_dict())
-      data.update(filter_keys(sm['radarState'].to_dict(), ("leadOne", "leadTwo")))
-      data.update(filter_keys(sm['liveCalibration'].to_dict(), ["height"]))
-      data.update(filter_keys(sm['carParams'].to_dict(), "openpilotLongitudinalControl"))
-      data.update(filter_keys(sm['carState'].to_dict(), ["vEgoCluster"]))
-      data.update(sm['carControl'].to_dict())
-      data.update(sm['deviceState'].to_dict())
-      data.update(sm['driverStateV2'].to_dict())
-      data.update(filter_keys(sm['controlsState'].to_dict(), ["vCruiseCluster", "alertText1", "alertText2", "alertSize", "alertStatus"]))
-      data.update(filter_keys(sm['driverMonitoringState'].to_dict(), ["isActiveMode", "events"]))
-      data.update(filter_keys(sm['longitudinalPlan'].to_dict(), ["personality"]))
-
-      # Pack and send
-      message = msgpack.packb(data)
-      try:
-        self.udp_sock.sendto(message, (self.ip, UDP_PORT))
-      except BlockingIOError:
+  def send_udp_message(self, is_metric):
+    if send_ip := self.udp_send_ip:
+      (data := extract_model_data((sm := self.sm)['modelV2'].to_dict())).update(sm['controlsState'].to_dict())
+      data["IsMetric"] = is_metric
+      data['dongleID'] = DONGLE_ID
+      update_dict_from_sm(data, sm['radarState'], ["leadOne", "leadTwo"])
+      update_dict_from_sm(data, sm['driverMonitoringState'], ["isActiveMode", "events"])
+      update_dict_from_sm(data, sm['liveCalibration'], ["height"])
+      update_dict_from_sm(data, sm['carState'], ["vEgoCluster"])
+      update_dict_from_sm(data, sm['longitudinalPlan'], ["personality"])
+      try: # Pack and send
+        self.udp_sock.sendto(msgpack.packb(data), (send_ip, UDP_PORT))
+      except (BlockingIOError, OSError):
+        pass
+      except Exception:
         pass
 
-  def send_tcp_message(self, is_offroad):
-    if self.tcp_conn:
+  def send_tcp_message(self, is_offroad, state, is_metric):
+    if tcp_conn := self.tcp_conn:
       try:
-        (sm := self.sm).update(10)
-        sett = {}
-        sett['connectivityStatus'] = str(sm['deviceState'].networkType)
-        sett['deviceStatus'] = deviceStatus(sm)
-        sett['remainingDataUpload'] = remainingDataUpload(sm)
-        # TODO send uploadStatus in selfdrive/loggerd/uploader.py
+        sett = {'isOffroad': is_offroad}
+        sett['dongleID'] = DONGLE_ID
         sett['gitCommit'] = get_commit()[:7]
-        # TODO include bukapilot changes in selfdrive/updated.py
-        sett['updateStatus'] = safe_get("UpdaterState")
+        sett['currentVersion'] = get_version()
+        sett['osVersion'] = HARDWARE.get_os_version()
+        sett["state"] = str(state)
+        sett['IsMetric'] = is_metric
+        sett['localIP'] = self.local_wlan_ip
+        sett['activeWlanSSID'] = \
+          f"Connecting to\n{attempt_ssid}" if (attempt_ssid := self.wifi_connect_attempt_ssid) else self.active_wlan_ssid
 
-        sett['isOffroad'] = is_offroad
-        sett['enableBukapilot'] = safe_get("OpenpilotEnabledToggle", bool_value=True)
-        sett['quietMode'] = safe_get("QuietMode", bool_value=True)
-        sett['enableAssistedLaneChange'] = safe_get("IsAlcEnabled", bool_value=True)
-        sett['enableLaneDepartureWarning'] = safe_get("IsLdwEnabled", bool_value=True)
-        sett['uploadVideoWiFiOnly'] = safe_get("LogVideoWifiOnly", bool_value=True)
-        sett['apn'] = safe_get("GsmApn")
-        sett['enableRoaming'] = safe_get("GsmRoaming", bool_value=True)
-        sett['driverPersonality'] = safe_get("LongitudinalPersonality", decode_utf8=True)
-        sett['useMetricSystem'] = safe_get("IsMetric", bool_value=True)
-        sett['enableSSH'] = safe_get("SshEnabled", bool_value=True)
-        sett['experimentalModel'] = safe_get("ExperimentalMode", bool_value=True)
-        sett['recordUploadDriverCamera'] = safe_get("RecordFront", bool_value=True)
-        sett['featurePackage'] = safe_get("FeaturesPackage")
-        sett['fixFingerprint'] = safe_get("FixFingerprint")
+        bool_keys = {
+          'OpenpilotEnabledToggle', 'QuietMode', 'IsAlcEnabled', 'IsLdwEnabled',
+          'SshEnabled', 'ExperimentalMode', 'RecordFront', 'UpdateAvailable',
+          'UpdaterFetchAvailable'
+        }
+        string_keys = {
+          'LongitudinalPersonality', 'HardwareSerial', 'FeaturesPackage', 'FixFingerprint',
+          'UpdaterCurrentReleaseNotes', 'UpdaterTargetBranch', 'UpdaterState', 'UpdateFailedCount',
+          'LastUpdateTime', 'GithubUsername'
+        }
 
-        if self.requestInfo:
-          sett['requestDeviceInfo'] = True
-          sett['dongleID'] = safe_get("DongleId", decode_utf8=True)
-          sett['serial'] = safe_get("HardwareSerial", decode_utf8=True)
-          sett['hostname'] = socket.gethostname()
-          sett['currentVersion'] = get_version()
-          sett['osVersion'] = HARDWARE.get_os_version()
-          sett['currentBranch'] = get_short_branch()
-          sett['currentChangelog'] = safe_get("UpdaterCurrentReleaseNotes")
-          self.requestInfo = False
-
-        self.tcp_conn.sendall(msgpack.packb(sett))
+        for key in bool_keys:
+          sett[key] = safe_get(key, True)
+        for key in string_keys:
+          sett[key] = safe_get(key, False)
+        tcp_conn.sendall(msgpack.packb(sett))
 
       except socket.error:
-        self.tcp_conn = None  # Reset connection on error
+        self.tcp_conn = None # Reset connection on error
 
   def accept_new_connection(self):
     if not self.tcp_conn:
       try:
         self.tcp_conn, addr = self.tcp_sock.accept()
-        self.ip = addr[0]  # Update client IP for UDP messages
       except socket.error:
         pass
 
   def receive_udp_message(self):
     try:
       message, addr = self.udp_sock.recvfrom(BUFFER_SIZE)
-      self.ip = addr[0]  # Update client IP
+      if message and DONGLE_ID in msgpack.unpackb(message): # Message only contains dongle ID list
+        self.udp_send_ip = addr[0] # Update client IP
     except Exception:
       pass
 
-  def receive_tcp_message(self, is_offroad):
-    if self.tcp_conn:
+  def receive_tcp_message(self, is_offroad, state, cur_time):
+    if tcp_conn := self.tcp_conn:
       try:
-        message = self.tcp_conn.recv(BUFFER_SIZE, socket.MSG_DONTWAIT)
-        if message:
+        if message := tcp_conn.recv(BUFFER_SIZE, socket.MSG_DONTWAIT):
           try:
             settings = msgpack.unpackb(message)
-            self.requestInfo = settings['requestDeviceInfo']
-
-            if is_offroad and not self.requestInfo:
-              # Set values
-              # print("\nPutting parameters")
-              mapping={
-                "OpenpilotEnabledToggle":"enableBukapilot",
-                "QuietMode":"quietMode",
-                "IsAlcEnabled":"enableAssistedLaneChange",
-                "IsLdwEnabled":"enableLaneDepartureWarning",
-                "LogVideoWifiOnly":"uploadVideoWiFiOnly",
-                "GsmRoaming":"enableRoaming",
-                "IsMetric":"useMetricSystem",
-                "SshEnabled":"enableSSH",
-                "ExperimentalMode":"experimentalModel",
-                "RecordFront":"recordUploadDriverCamera",
-              }
-
-              # non_bool_values = {}
-              safe_put_all(settings, mapping)
+            # Check if account is valid
+            if DONGLE_ID in settings.pop('deviceList', []):
+              match settings.pop('msgType'):
+                case 'saveToggles':
+                  is_offroad and safe_put_all(settings, True)
+                case 'saveConfig':
+                  #TODO: Add code to set fingerprint and features
+                  safe_put_all(settings)
+                case 'resetCalibration':
+                  reset_calibration()
+                case 'reboot':
+                  do_reboot(state)
+                case 'tncAccepted':
+                  params.put("HasAcceptedTerms", terms_version)
+                  params.put("CompletedTrainingVersion", training_version)
+                case 'changeTargetBranch':
+                  if targetBranch := settings.get('targetBranch'):
+                    params.put("UpdaterTargetBranch", targetBranch)
+                    check_for_updates()
+                case 'update':
+                  match settings.get('action'):
+                    case 'check':
+                      check_for_updates()
+                    case 'install':
+                      do_reboot(state)
+                    case 'fetch':
+                      fetch_update()
+                case 'ssh':
+                  if username := settings.get('username'):
+                    params.put("GithubUsername", username)
+                    params.put("GithubSshKeys", settings.get('keys'))
+                  else:
+                    params.remove("GithubUsername")
+                    params.remove("GithubSshKeys")
+                case 'wifi':
+                  if (ssid := settings.get('ssid')):
+                    match settings.get('action'):
+                      case 'connect':
+                        self.connect_to_wifi(ssid, settings.get('password'), cur_time)
+                      case 'forget':
+                        forget_wifi_network(ssid)
+                case 'formatSD':
+                  safe_put_all({"FormatSDCard": True}, True)
 
           except Exception as e:
             print(f"\nError: {e}\nRaw TCP: {message}")
@@ -255,24 +276,37 @@ class Streamer:
         pass
 
   def streamd_thread(self):
+    is_metric = None
     while True:
-      self.rk.monitor_time()
-      self.receive_udp_message()
-      self.send_udp_message()
-      self.accept_new_connection()
-      self.receive_tcp_message(is_offroad := params.get_bool("IsOffroad"))
-      self.send_tcp_message(is_offroad)
-      self.check_calibration(is_offroad)
-      self.rk.keep_time()
+      (sm := self.sm).update(SM_UPDATE_INTERVAL)
+      (rk:= self.rk).monitor_time()
 
-  def close_connections(self):
-    if self.tcp_conn:
-      self.tcp_conn.close()
-    self.udp_sock.close()
+      if (cur_time := monotonic()) - self.last_1hz_task_time >= 1: # 1 Hz
+        self.last_1hz_task_time = cur_time
+        self.update_wlan_info_async()
+        if attempt_ssid := self.wifi_connect_attempt_ssid:
+          if ((connected := self.active_wlan_ssid == attempt_ssid) or
+            (cur_time - self.wifi_connect_attempt_start_time) >= WIFI_CONNECT_TIMEOUT_SECONDS):
+              if not connected:
+                print(f"Timeout reached, forgetting SSID {attempt_ssid}")
+                forget_wifi_network(attempt_ssid)
+              else:
+                print(f"Wi-Fi {attempt_ssid} connected")
+              self.wifi_connect_attempt_ssid = None
+              self.wifi_connect_attempt_start_time = None
+
+      if cur_time - self.last_periodic_time >= 0.333: # 3 Hz
+        self.last_periodic_time = cur_time
+        self.accept_new_connection()
+        self.receive_tcp_message(is_offroad := params.get_bool("IsOffroad"), state := sm['controlsState'].state, cur_time)
+        self.send_tcp_message(is_offroad, state, is_metric := params.get_bool("IsMetric"))
+        self.receive_udp_message()
+
+      self.send_udp_message(is_metric)
+      rk.keep_time()
 
 def main():
-  streamer = Streamer()
-  streamer.streamd_thread()
+  Streamer().streamd_thread()
 
 if __name__ == "__main__":
   main()
