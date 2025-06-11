@@ -4,22 +4,25 @@ import msgpack
 import subprocess
 import psutil
 import threading
+import re
 from time import monotonic, sleep
 from openpilot.common.realtime import Ratekeeper
 import cereal.messaging as messaging
 from cereal import log
+from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_version, get_commit, terms_version, training_version
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
 
+SM_UPDATE_INTERVAL = 33
 BUFFER_SIZE = 65536   # If buffer too small, SSH keys will not be fully received.
 BIND_IP = "0.0.0.0"   # Bind to all network interfaces, allowing connections from any available network.
 UDP_PORT = 5006
 TCP_PORT = 5007
 WIFI_CONNECT_TIMEOUT_SECONDS = 20 # Timeout for Wi-Fi connection attempts
+NO_NETWORK_REGEX = re.compile(r"no network.*ssid", re.IGNORECASE)
 params = Params()
 DONGLE_ID = params.get("DongleId").decode("utf-8")
-SM_UPDATE_INTERVAL = 33
 
 def forget_wifi_network(ssid):
   if not ssid:
@@ -36,7 +39,7 @@ def fetch_update():
 def extract_model_data(data_dict):
   try:
     return {key: data_dict[key] for key in ("position", "acceleration", "frameId")} | {
-      f"{key[:-1]}{i}": item for key in ("laneLines", "roadEdges")
+      f"{key[:-1]}{i}": item for key in ("laneLines", "roadEdges", "laneLineProbs", "roadEdgeStds")
       for i, item in enumerate(data_dict[key], 1)
     }
   except Exception:
@@ -55,7 +58,7 @@ def safe_put_all(settings_to_put, is_bool=False):
     try:
       (params.put_bool if is_bool else params.put)(param_key, value if is_bool else str(value))
     except Exception as e:
-      print(f"Error putting {param_key}: {e}")
+      cloudlog.error(f"Error putting {param_key}: {e}")
 
 def reset_calibration():
   params.remove("CalibrationParams")
@@ -110,8 +113,8 @@ class Streamer:
     def run_nmcli():
       sleep(5) # Wait 5 seconds for user to get hotspot/Wi-Fi ready
       result = subprocess.run(["sudo", "nmcli"] + cmd, text=True, capture_output=True)
-      if "Error: No network with SSID" in result.stderr:
-        print(f"Wi-Fi SSID {ssid} not found, clearing attempt.")
+      if result.returncode != 0 and NO_NETWORK_REGEX.search(result.stderr):
+        cloudlog.warning(f"Wi-Fi SSID {ssid} not found, clearing attempt.")
         self.wifi_connect_attempt_ssid = None
         self.wifi_connect_attempt_start_time = None
         return False
@@ -271,7 +274,7 @@ class Streamer:
                   safe_put_all({"FormatSDCard": True}, True)
 
           except Exception as e:
-            print(f"\nError: {e}\nRaw TCP: {message}")
+            cloudlog.error(f"\nError: {e}\nRaw TCP: {message}")
       except Exception:
         pass
 
@@ -288,10 +291,10 @@ class Streamer:
           if ((connected := self.active_wlan_ssid == attempt_ssid) or
             (cur_time - self.wifi_connect_attempt_start_time) >= WIFI_CONNECT_TIMEOUT_SECONDS):
               if not connected:
-                print(f"Timeout reached, forgetting SSID {attempt_ssid}")
+                cloudlog.warning(f"Timeout reached, forgetting SSID {attempt_ssid}")
                 forget_wifi_network(attempt_ssid)
               else:
-                print(f"Wi-Fi {attempt_ssid} connected")
+                cloudlog.info(f"Wi-Fi {attempt_ssid} connected")
               self.wifi_connect_attempt_ssid = None
               self.wifi_connect_attempt_start_time = None
 
