@@ -126,6 +126,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"FirmwareQueryDone", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"FixFingerprint", PERSISTENT},
     {"ForcePowerDown", PERSISTENT},
+    {"FormatSDCard", CLEAR_ON_MANAGER_START},
     {"GitBranch", PERSISTENT},
     {"GitCommit", PERSISTENT},
     {"GitCommitDate", PERSISTENT},
