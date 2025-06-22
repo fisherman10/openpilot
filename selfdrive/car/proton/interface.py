@@ -41,13 +41,13 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1370. + STD_CARGO_KG
       ret.wheelSpeedFactor = 1
 
-      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [600]]  #maximum is 600 only. Any more it will disengage and reengage on its own.
+      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0., 15., 25., 35., 40.], [400, 600, 600, 700, 700]]  #maximum is 600 only. Any more it will disengage and reengage on its own.
 
       ret.lateralTuning.pid.kpBP = [0., 15., 25., 35., 40.]
-      ret.lateralTuning.pid.kpV = [0.03, 0.16, 0.17, 0.17, 0.18]
+      ret.lateralTuning.pid.kpV = [0.03, 0.14, 0.15, 0.16, 0.16]
       ret.lateralTuning.pid.kiBP = [0., 20., 25., 30., 40.]
       ret.lateralTuning.pid.kiV = [0.03, 0.02, 0.02, 0.02, 0.02]
-      ret.lateralTuning.pid.kf = 0.00009340000000
+      ret.lateralTuning.pid.kf = 0.000093420000000
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
       ret.longitudinalTuning.kpV = [0, 0, 0]
