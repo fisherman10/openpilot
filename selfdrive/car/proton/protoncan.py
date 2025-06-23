@@ -66,7 +66,7 @@ def create_pcm(packer, steer, steer_req):
   return packer.make_can_msg("PCM_BUTTONS", 0, values)
 
 def create_acc_cmd(packer, accel, enabled, gas_override, standstill):
-  accel_cmd = accel * 15
+  accel_cmd = accel * 15 if accel >= 0 else accel * 20
   if gas_override:
     accel_cmd = 0
   values = {

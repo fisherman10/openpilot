@@ -7,7 +7,7 @@ from openpilot.selfdrive.car.docs_definitions import CarInfo
 from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, Request, StdQueries
 
 # Todo
-HUD_MULTIPLIER = 1.035
+HUD_MULTIPLIER = 1.04
 Ecu = car.CarParams.Ecu
 
 @dataclass

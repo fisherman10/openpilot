@@ -1,4 +1,5 @@
 from cereal import car
+from common.params import Params
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from openpilot.common.numpy_fast import mean
@@ -36,6 +37,8 @@ class CarState(CarStateBase):
     self.acc_req = False
     self.prev_angle = 0
 
+    self.p = Params()
+    self.prev_distance_val = -1
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -110,7 +113,7 @@ class CarState(CarStateBase):
     self.prev_angle = ret.steeringAngleDeg
     ret.steeringTorque = cp.vl["STEERING_TORQUE"]['MAIN_TORQUE'] * steer_dir
     ret.steeringTorqueEps = cp.vl["STEERING_MODULE"]['STEER_RATE'] * steer_dir
-    ret.steeringPressed = bool(abs(ret.steeringTorque) > 31)
+    ret.steeringPressed = bool(abs(ret.steeringTorque) > 55)
 
     ret.vEgoCluster = ret.vEgo * HUD_MULTIPLIER
 
@@ -119,7 +122,12 @@ class CarState(CarStateBase):
     ret.stockFcw = bool(cp_cam.vl["FCW"]["STOCK_FCW_TRIGGERED"])
 
     ret.cruiseState.available = True
-    #distance_val = int(cp_cam.vl["PCM_BUTTONS"]['SET_DISTANCE'])
+    distance_val = int(cp_cam.vl["PCM_BUTTONS"]['SET_DISTANCE'])
+
+    if distance_val != self.prev_distance_val:
+      self.p.put("LongitudinalPersonality", str(distance_val - 1))
+    self.prev_distance_val = distance_val
+
     # TODO: ret.cruiseState.setDistance = self.parse_set_distance(self.set_distance_values.get(distance_val, None))
 
     self.cruise_speed = int(cp_cam.vl["PCM_BUTTONS"]['ACC_SET_SPEED']) * CV.KPH_TO_MS
@@ -190,4 +198,4 @@ class CarState(CarStateBase):
       ("PCM_BUTTONS", 0),
     ]
 
-    return CANParser(DBC[CP.carFingerprint]['pt'], signals, CANBUS.cam_bus)
+    return CANParser(DBC[CP.carFingerprint]['pt'], signals, 1)
