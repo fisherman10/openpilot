@@ -15,8 +15,8 @@ BRAKE_MAG = [BRAKE_THRESHOLD,.32,.46,.61,.76,.90,1.06,1.21,1.35,1.51,4.0]
 PUMP_VALS = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0]
 PUMP_RESET_INTERVAL = 1.5
 PUMP_RESET_DURATION = 0.1
-BOOST = 1.4
-BRAKE_M = 1.6
+
+BRAKE_M = 1.0
 
 class BrakingStatus():
   STANDSTILL_INIT = 0
@@ -140,8 +140,13 @@ class CarController(CarControllerBase):
     # speed and brake, speed using simple kinematics v = u + at
     # because dnga is speed controlled, the PID for positive accel is done by the car
     # so we change the equation to v = u + ka and assume k include the time horizon of 1s
-    des_speed = CS.out.vEgo + actuators.accel * BOOST
-    apply_brake = 0 if (CS.out.gasPressed or actuators.accel >= 0) else clip(abs(actuators.accel / BRAKE_M), 0., 1.56)
+    k = 0.5 + 0.06 * CS.out.vEgo
+    des_speed = CS.out.vEgo + actuators.accel * k
+    apply_brake = 0 if (CS.out.gasPressed or actuators.accel >= 0) else clip(abs(actuators.accel / BRAKE_M), 0., 1.25)
+
+    # reduce max brake when below 10kmh to reduce jerk. TODO: more elegant way to do this?
+    if CS.out.vEgo < 2.8:
+      apply_brake = clip(apply_brake, 0., 0.8)
 
     # always clear dtc for dnga for the first 10s
     if self.frame <= 1000:
@@ -150,7 +155,7 @@ class CarController(CarControllerBase):
     if (self.frame % 2) == 0:
       # allow stock LDP passthrough
       self.stockLdw = CS.laneDepartWarning
-      if self.stockLdw:
+      if self.stockLdw and not enabled:
         apply_steer = -CS.ldpSteerV
 
       steer_req = (enabled or self.stockLdw) and CS.lkas_latch and not CS.lkaDisabled
