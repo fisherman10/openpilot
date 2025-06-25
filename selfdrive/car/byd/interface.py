@@ -28,9 +28,11 @@ class CarInterface(CarInterfaceBase):
     # TODO: steer based vehicle needs pid tuning?
     ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [530]]
     ret.lateralTuning.pid.kpBP = [0., 5., 20.]
-    ret.longitudinalTuning.kpV = [0.15, 0.6, 0.7]
+    ret.longitudinalTuning.kpV = [1.6, 1.5, 1.4]
     ret.lateralTuning.pid.kiBP = [0., 5., 20.]
-    ret.longitudinalTuning.kiV = [0.15, 0.26, 0.26]
+    ret.longitudinalTuning.kiV = [0.38, 0.3, 0.18]
+
+    ret.wheelSpeedFactor = HUD_MULTIPLIER / 1.08 # the HUD odo is exactly 1 to 1 with gps speed
 
     if candidate == CAR.ATTO3:
       ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.32, 0.23, 0.12], [1.5, 1.3, 1.0]]

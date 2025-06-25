@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from openpilot.selfdrive.car import CarSpecs, DbcDict, PlatformConfig, Platforms, dbc_dict
 from openpilot.selfdrive.car.docs_definitions import CarInfo
 
-HUD_MULTIPLIER = 0.718
+HUD_MULTIPLIER = 0.74
 
 @dataclass
 class BYDPlatformConfig(PlatformConfig):

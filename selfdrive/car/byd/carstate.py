@@ -5,6 +5,7 @@ from openpilot.common.numpy_fast import mean
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from openpilot.selfdrive.car.byd.values import DBC, CANBUS
+from common.params import Params
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -27,6 +28,9 @@ class CarState(CarStateBase):
     self.pt4 = 0
     self.pt5 = 0
     self.lkas_rdy_btn = False
+
+    self.p = Params()
+    self.prev_distance_val = -1
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -94,8 +98,11 @@ class CarState(CarStateBase):
     ret.stockFcw = False
     ret.cruiseState.available = any([cp_cam.vl["ACC_HUD_ADAS"]["ACC_ON1"], cp_cam.vl["ACC_HUD_ADAS"]["ACC_ON2"]])
 
-    # distance_val = int(cp.vl["ACC_HUD_ADAS"]['SET_DISTANCE'])
-    # TODO: ret.cruiseState.setDistance = self.parse_set_distance(self.set_distance_values.get(distance_val, None))
+    # VAL_ 813 SET_DISTANCE 8 "4bar" 4 "3bar" 2 "2bar" 1 "1bar" ;
+    distance_val = int(cp.vl["ACC_HUD_ADAS"]['SET_DISTANCE'])
+    if distance_val != self.prev_distance_val:
+      self.p.put("LongitudinalPersonality", str(2 if distance_val in (4, 8) else distance_val - 1))
+    self.prev_distance_val = distance_val
 
     # engage and disengage logic, do we still need this?
     if (cp.vl["PCM_BUTTONS"]["SET_BTN"] != 0 or cp.vl["PCM_BUTTONS"]["RES_BTN"] != 0) and not ret.brakePressed:

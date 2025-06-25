@@ -1,4 +1,4 @@
-const CanMsg BYD_TX_MSGS[] = {{0x1E2, 0, 8}, {0x316, 0, 8}};
+const CanMsg BYD_TX_MSGS[] = {{0x1E2, 0, 8}, {0x316, 0, 8}, {0x32E, 0, 8}};
 
 RxCheck byd_rx_checks[] = {
   //{.msg = {{0x35F, 0, 8, .frequency = 20U}, { 0 }, { 0 }}},
@@ -29,8 +29,8 @@ static int byd_fwd_hook(int bus_num, int addr) {
 
   if (bus_num == 1) {
     bool is_lkas_msg = ((addr == 0x1E2) || (addr == 0x316));
-    //bool is_acc_msg = (addr == 814);
-    bool block_msg = is_lkas_msg;// || is_acc_msg;
+    bool is_acc_msg = (addr == 0x32E);
+    bool block_msg = is_lkas_msg || is_acc_msg;
     if (!block_msg) {
       bus_fwd = 0;
     }
