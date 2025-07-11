@@ -2,7 +2,7 @@
 from cereal import car
 from openpilot.selfdrive.car import get_safety_config
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
-from openpilot.selfdrive.car.byd.values import CAR
+from openpilot.selfdrive.car.byd.values import CAR, HUD_MULTIPLIER
 
 EventName = car.CarEvent.EventName
 
@@ -28,11 +28,11 @@ class CarInterface(CarInterfaceBase):
     # TODO: steer based vehicle needs pid tuning?
     ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [530]]
     ret.lateralTuning.pid.kpBP = [0., 5., 20.]
-    ret.longitudinalTuning.kpV = [1.6, 1.5, 1.4]
+    ret.longitudinalTuning.kpV = [2.2, 2.0, 1.8]
     ret.lateralTuning.pid.kiBP = [0., 5., 20.]
-    ret.longitudinalTuning.kiV = [0.38, 0.3, 0.18]
+    ret.longitudinalTuning.kiV = [0.45, 0.40, 0.32]
 
-    ret.wheelSpeedFactor = HUD_MULTIPLIER / 1.08 # the HUD odo is exactly 1 to 1 with gps speed
+    ret.wheelSpeedFactor = 0.695
 
     if candidate == CAR.ATTO3:
       ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.32, 0.23, 0.12], [1.5, 1.3, 1.0]]
@@ -44,9 +44,11 @@ class CarInterface(CarInterfaceBase):
       ret.dashcamOnly = True
       ret.safetyModel = car.CarParams.SafetyModel.noOutput
 
+    ret.startingState = True
+    ret.startAccel = 1.0
     ret.minEnableSpeed = -1
     ret.enableBsm = True
-    ret.stoppingDecelRate = 0.05 # reach stopping target smoothly
+    ret.stoppingDecelRate = 0.1 # reach stopping target smoothly
 
     return ret
 

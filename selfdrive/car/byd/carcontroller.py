@@ -1,31 +1,26 @@
 from opendbc.can.packer import CANPacker
 
+from openpilot.selfdrive.car import apply_std_steer_angle_limits, AngleRateLimit
 from openpilot.selfdrive.car.interfaces import CarControllerBase
-
 from openpilot.selfdrive.car.byd.bydcan import create_can_steer_command, send_buttons, create_lkas_hud, create_accel_command
 from openpilot.selfdrive.car.byd.values import DBC
 from openpilot.common.numpy_fast import clip
 
-def apply_byd_steer_rate_limits(apply_angle, actual_angle, v_ego, LIMITS):
-  # pick angle rate limits based on wind up/down
-  steer_up = actual_angle * apply_angle >= 0. and abs(apply_angle) > abs(actual_angle)
-  rate_limits = LIMITS.ANGLE_RATE_LIMIT_UP if steer_up else LIMITS.ANGLE_RATE_LIMIT_DOWN
-
-  return clip(apply_angle, actual_angle - rate_limits, actual_angle + rate_limits)
+ECU_FAULT_ANGLE = 260 # degress
 
 class CarControllerParams():
+  ANGLE_RATE_LIMIT_UP = AngleRateLimit(speed_bp=[0., 5., 15.], angle_v=[4., 3., 2.])
+  ANGLE_RATE_LIMIT_DOWN = AngleRateLimit(speed_bp=[0., 5., 15.], angle_v=[6., 4., 3.])
+
   def __init__(self, CP):
-    self.ANGLE_RATE_LIMIT_UP = 3       # supposedly 180 degrees in 0.6s, but friction & other delays -> 1.8s
-    self.ANGLE_RATE_LIMIT_DOWN = 3
+    pass
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
     self.CP = CP
     self.frame = 0
     self.packer = CANPacker(DBC[CP.carFingerprint]['pt'])
-    self.params = CarControllerParams(self.CP)
 
-    self.steer_rate_limited = False
     self.lka_active = False
 
   def update(self, CC, CS, now_nanos):
@@ -33,32 +28,35 @@ class CarController(CarControllerBase):
 
     enabled = CC.latActive
     actuators = CC.actuators
+    apply_angle = CS.out.steeringAngleDeg
+    # lkas user activation, cannot tie to lka_on state because it may deactivate itself
+    if CS.lka_on:
+      self.lka_active = True
+    if not CS.lka_on and CS.lkas_rdy_btn:
+      self.lka_active = False
 
-    # steer
-    apply_angle = apply_byd_steer_rate_limits(actuators.steeringAngleDeg, CS.out.steeringAngleDeg, CS.out.vEgo, self.params)
-    self.steer_rate_limited = (abs(apply_angle - CS.out.steeringAngleDeg) > 2.5)
+    lat_active = enabled and self.lka_active and not CS.out.standstill
+      #and not CS.out.steeringPressed and abs(CS.out.steeringAngleDeg) < ECU_FAULT_ANGLE
 
-    # BYD CAN controlled lateral running at 50hz
     if (self.frame % 2) == 0:
+      if lat_active:
+        apply_angle = apply_std_steer_angle_limits(actuators.steeringAngleDeg, \
+          CS.out.steeringAngleDeg, CS.out.vEgo, CarControllerParams)
 
-      # logic to activate and deactivate lane keep, cannot tie to the lka_on state because it will occasionally deactivate itself
-      if CS.lka_on:
-        self.lka_active = True
-      if not CS.lka_on and CS.lkas_rdy_btn:
-        self.lka_active = False
+        # assumption why eps fault:
+        # 1. steer rate too high
+        # 2. met with resistance while steering
+        # 3. applied steer too far away from current steeringAngleDeg
+        apply_angle = clip(apply_angle, CS.out.steeringAngleDeg - 10, CS.out.steeringAngleDeg + 10)
 
-      lat_active = enabled and abs(CS.out.steeringAngleDeg) < 90 and \
-      self.lka_active and not CS.out.standstill # temporary hardcode 60 because if 90 degrees it will fault
-
-      brake_hold = False
-      can_sends.append(create_can_steer_command(self.packer, apply_angle, lat_active, CS.out.standstill))
-      can_sends.append(create_accel_command(self.packer, actuators.accel, enabled, brake_hold))
+      can_sends.append(create_can_steer_command(self.packer, apply_angle, lat_active, CS.out.standstill, CS.lkas_healthy, CS.lkas_rdy_btn))
       can_sends.append(create_lkas_hud(self.packer, enabled, CS.lss_state, CS.lss_alert, CS.tsr, \
-      CS.abh, CS.passthrough, CS.HMA, CS.pt2, CS.pt3, CS.pt4, CS.pt5, self.lka_active))
+        CS.abh, CS.passthrough, CS.HMA, CS.pt2, CS.pt3, CS.pt4, CS.pt5, self.lka_active))
 
-
-    #if enabled and (CS.out.standstill or CS.out.cruiseState.standstill):
-    #  can_sends.append(send_buttons(self.packer, 1))
+      if self.CP.openpilotLongitudinalControl:
+        long_active = enabled and not CS.out.gasPressed
+        brake_hold = CS.out.standstill and actuators.accel < 0
+        can_sends.append(create_accel_command(self.packer, actuators.accel, long_active, brake_hold))
 
     new_actuators = actuators.copy()
     new_actuators.steeringAngleDeg = apply_angle

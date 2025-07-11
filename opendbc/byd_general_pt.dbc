@@ -49,7 +49,7 @@ BO_ 482 STEERING_MODULE_ADAS: 8 XXX
  SG_ SET_ME_XE : 16|4@1+ (1,0) [0|15] "" XXX
  SG_ SET_ME_X01 : 8|2@1+ (1,0) [0|3] "" XXX
  SG_ SET_ME_1_1 : 23|1@0+ (1,0) [0|1] "" XXX
- SG_ STEER_REQ_ACTIVE_LOW : 20|1@0+ (1,0) [0|1] "" XXX
+ SG_ EPS_OK : 20|1@0+ (1,0) [0|1] "" XXX
  SG_ SET_ME_1_2 : 22|1@0+ (1,0) [0|3] "" XXX
  SG_ STEER_REQ : 21|1@0+ (1,0) [0|1] "" XXX
  SG_ UNKNOWN : 7|14@0- (1,0) [0|65535] "" XXX
@@ -110,10 +110,10 @@ BO_ 790 LKAS_HUD_ADAS: 8 XXX
  SG_ SET_ME_X5F : 31|8@0+ (1,0) [0|255] "" XXX
  SG_ SET_ME_1_2 : 32|1@0+ (1,0) [0|1] "" XXX
  SG_ SETTINGS : 48|4@1+ (1,0) [0|15] "" XXX
- SG_ STEER_ACTIVE_1_3 : 35|1@0+ (1,0) [0|1] "" XXX
- SG_ STEER_ACTIVE_1_2 : 37|1@0+ (1,0) [0|1] "" XXX
+ SG_ RIGHT_LANE_VISIBLE : 35|1@0+ (1,0) [0|1] "" XXX
+ SG_ LKAS_ENABLED : 37|1@0+ (1,0) [0|1] "" XXX
  SG_ HAND_ON_WHEEL_WARNING : 10|1@0+ (1,0) [0|1] "" XXX
- SG_ STEER_ACTIVE_1_1 : 5|1@0+ (1,0) [0|1] "" XXX
+ SG_ LEFT_LANE_VISIBLE : 5|1@0+ (1,0) [0|1] "" XXX
  SG_ LSS_STATE : 7|2@0+ (1,0) [0|1] "" XXX
  SG_ HMA : 4|5@0+ (1,0) [0|7] "" XXX
  SG_ PT2 : 11|5@1+ (1,0) [0|31] "" XXX

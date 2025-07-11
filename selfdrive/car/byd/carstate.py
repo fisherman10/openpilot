@@ -4,7 +4,7 @@ from opendbc.can.can_define import CANDefine
 from openpilot.common.numpy_fast import mean
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.interfaces import CarStateBase
-from openpilot.selfdrive.car.byd.values import DBC, CANBUS
+from openpilot.selfdrive.car.byd.values import DBC, CANBUS, HUD_MULTIPLIER
 from common.params import Params
 
 class CarState(CarStateBase):
@@ -28,6 +28,7 @@ class CarState(CarStateBase):
     self.pt4 = 0
     self.pt5 = 0
     self.lkas_rdy_btn = False
+    self.lkas_faulted = False
 
     self.p = Params()
     self.prev_distance_val = -1
@@ -45,6 +46,7 @@ class CarState(CarStateBase):
     self.pt3 = cp_cam.vl["LKAS_HUD_ADAS"]['PT3']
     self.pt4 = cp_cam.vl["LKAS_HUD_ADAS"]['PT4']
     self.pt5 = cp_cam.vl["LKAS_HUD_ADAS"]['PT5']
+    self.lkas_healthy = cp_cam.vl["STEERING_MODULE_ADAS"]['EPS_OK']
 
     # EV irrelevant messages
     ret.brakeHoldActive = False
@@ -60,7 +62,7 @@ class CarState(CarStateBase):
     # unfiltered speed from CAN sensors
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.vEgoCluster = ret.vEgo
-    ret.standstill = ret.vEgoRaw < 0.05
+    ret.standstill = ret.vEgoRaw < 0.01
 
     # safety checks to engage
     can_gear = int(cp.vl["DRIVE_STATE"]['GEAR'])
@@ -79,7 +81,7 @@ class CarState(CarStateBase):
 
     # gas pedal
     ret.gas = cp.vl["PEDAL"]['GAS_PEDAL']
-    ret.gasPressed = ret.gas > 0.01
+    ret.gasPressed = ret.gas >= 0.01
 
     # brake pedal
     ret.brake = cp.vl["PEDAL"]['BRAKE_PEDAL']
@@ -99,7 +101,7 @@ class CarState(CarStateBase):
     ret.cruiseState.available = any([cp_cam.vl["ACC_HUD_ADAS"]["ACC_ON1"], cp_cam.vl["ACC_HUD_ADAS"]["ACC_ON2"]])
 
     # VAL_ 813 SET_DISTANCE 8 "4bar" 4 "3bar" 2 "2bar" 1 "1bar" ;
-    distance_val = int(cp.vl["ACC_HUD_ADAS"]['SET_DISTANCE'])
+    distance_val = int(cp_cam.vl["ACC_HUD_ADAS"]['SET_DISTANCE'])
     if distance_val != self.prev_distance_val:
       self.p.put("LongitudinalPersonality", str(2 if distance_val in (4, 8) else distance_val - 1))
     self.prev_distance_val = distance_val
@@ -118,7 +120,7 @@ class CarState(CarStateBase):
     else:
       ret.cruiseState.speedCluster = 0
 
-    ret.cruiseState.speed = ret.cruiseState.speedCluster
+    ret.cruiseState.speed = ret.cruiseState.speedCluster / HUD_MULTIPLIER
     ret.cruiseState.standstill = bool(cp_cam.vl["ACC_CMD"]["STANDSTILL_STATE"])
     ret.cruiseState.nonAdaptive = False
 
@@ -152,10 +154,10 @@ class CarState(CarStateBase):
       # sig_address, frequency
       ("DRIVE_STATE", 50),
       ("WHEEL_SPEED", 50),
-      ("PEDAL", 0),
+      ("PEDAL", 50),
       ("METER_CLUSTER", 20),
       ("STEER_MODULE_2", 100),
-      ("STEERING_TORQUE", 0),
+      ("STEERING_TORQUE", 50),
       ("STALKS", 0),
       ("BSM", 20),
       ("PCM_BUTTONS", 0),
@@ -168,9 +170,10 @@ class CarState(CarStateBase):
     signals = [
       # TODO get the frequency
       # sig_address, frequency
-      ("ACC_HUD_ADAS", 0),
-      ("ACC_CMD", 0),
-      ("LKAS_HUD_ADAS", 0),
+      ("ACC_HUD_ADAS", 50),
+      ("ACC_CMD", 50),
+      ("LKAS_HUD_ADAS", 50),
+      ("STEERING_MODULE_ADAS", 50),
     ]
 
     return CANParser(DBC[CP.carFingerprint]['pt'], signals, 1)
