@@ -1,131 +1,82 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -e
 
-# Get absolute path of the script's directory and go to project root
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-PROJECT_ROOT="$DIR/.."
-cd "$PROJECT_ROOT"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+ROOT=$DIR/../
+cd $ROOT
 
-PYTHON_VERSION="3.11.4"
-PY_SHORT="$(echo "$PYTHON_VERSION" | cut -d. -f1,2)"
-PYTHON_BIN="/usr/local/bin/python${PY_SHORT}"
-PIP_BIN="/usr/local/bin/pip${PY_SHORT}"
-TMPDIR="$PROJECT_ROOT/tmp"
-mkdir -p "$TMPDIR"
-export TMPDIR
-
-# Ensure /tmp has correct permissions and try to remount if not writable
-check_tmp_permissions() {
-  if ! touch /tmp/test_perm 2>/dev/null; then
-    chmod 1777 /tmp || true
-    mount -o remount,rw,nosuid,nodev,noexec,mode=1777 /tmp || echo "  (warning: /tmp remount failed)"
-  else
-    rm -f /tmp/test_perm
-  fi
-}
-
-# Install system packages needed to build Python and common dependencies (Linux only)
-install_system_dependencies() {
-  if [[ "$(uname)" == "Linux" ]]; then
-    apt-get update -qq
-    apt-get install -y --no-install-recommends \
-      build-essential curl wget libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
-      libsqlite3-dev llvm libncurses-dev xz-utils tk-dev libffi-dev liblzma-dev \
-      python3-openssl
-  fi
-}
-
-# Download and build Python from source, then install it
-build_and_install_python() {
-  cd "$TMPDIR"
-  if [ ! -f "Python-$PYTHON_VERSION.tgz" ]; then
-    wget -q "https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz"
-  fi
-
-  if [ ! -d "Python-$PYTHON_VERSION" ]; then
-    tar xf "Python-$PYTHON_VERSION.tgz"
-  fi
-
-  cd "Python-$PYTHON_VERSION"
-  ./configure --enable-optimizations --enable-shared
-  make -j"$(nproc)"
-  make altinstall
-
-  if [[ "$(uname)" == "Linux" ]]; then
-    echo "/usr/local/lib" > "/etc/ld.so.conf.d/python-$PYTHON_VERSION.conf"
-    ldconfig
-    ln -sf "$PYTHON_BIN" "/usr/bin/python${PY_SHORT}"
-    ln -sf "$PIP_BIN" "/usr/bin/pip${PY_SHORT}"
-  fi
-}
-
-# Create virtualenv, install Poetry, then install project dependencies
-install_project_dependencies() {
-  if [[ "$(uname)" == "Darwin" ]]; then
-    python${PY_SHORT} -m venv .venv
-  else
-    "$PYTHON_BIN" -m venv .venv
-  fi
-
-  source .venv/bin/activate
-  pip install --upgrade pip setuptools wheel
-  pip install "poetry>=1.6,<2.0"
-
-  poetry config virtualenvs.prefer-active-python true --local
-  poetry config virtualenvs.in-project true --local
-  poetry install --no-root --no-interaction
-
-  echo "PYTHONPATH=${PWD}" > "$PROJECT_ROOT/.env"
-
-  if [[ "$(uname)" == 'Darwin' ]]; then
-    echo "# msgq doesn't work on mac" >> "$PROJECT_ROOT/.env"
-    echo "export ZMQ=1" >> "$PROJECT_ROOT/.env"
-    echo "export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES" >> "$PROJECT_ROOT/.env"
-  fi
-
-  poetry self add poetry-dotenv-plugin@^0.1.0
-}
-
-# Fix permissions of Poetry's cache directory if script ran as root
-fix_poetry_cache_permissions() {
-  if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
-    POETRY_CACHE="/home/$SUDO_USER/.cache/pypoetry"
-    if [ -d "$POETRY_CACHE" ]; then
-      chown -R "$SUDO_USER:$SUDO_USER" "$POETRY_CACHE"
-    fi
-  fi
-}
-
-# Fix git submodule hook permissions if script ran as root
-fix_git_hook_permissions() {
-  if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
-    chown -R "$SUDO_USER:$SUDO_USER" "$PROJECT_ROOT/.git"
-  fi
-}
-
-# Re-run script as root if on Linux and not already root
-if [[ "$(uname)" == "Linux" && "$(id -u)" -ne 0 ]]; then
-  exec sudo bash "$0" "$@"
+RC_FILE="${HOME}/.$(basename ${SHELL})rc"
+if [ "$(uname)" == "Darwin" ] && [ $SHELL == "/bin/bash" ]; then
+  RC_FILE="$HOME/.bash_profile"
 fi
 
-check_tmp_permissions
-install_system_dependencies
-build_and_install_python
-
-# Run dependency setup as the original user
-if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
-  sudo -u "$SUDO_USER" bash -c "cd '$PROJECT_ROOT' && $(declare -f install_project_dependencies); install_project_dependencies"
-  fix_poetry_cache_permissions
-else
-  install_project_dependencies
+if ! command -v "pyenv" > /dev/null 2>&1; then
+  echo "pyenv install ..."
+  curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+  PYENV_PATH_SETUP="export PATH=\$HOME/.pyenv/bin:\$HOME/.pyenv/shims:\$PATH"
 fi
 
-fix_git_hook_permissions
+if [ -z "$PYENV_SHELL" ] || [ -n "$PYENV_PATH_SETUP" ]; then
+  echo "pyenvrc setup ..."
+  cat <<EOF > "${HOME}/.pyenvrc"
+if [ -z "\$PYENV_ROOT" ]; then
+  $PYENV_PATH_SETUP
+  export PYENV_ROOT="\$HOME/.pyenv"
+  eval "\$(pyenv init -)"
+  eval "\$(pyenv virtualenv-init -)"
+fi
+EOF
 
-# Install pre-commit hooks (only on Linux and in a git repo)
-if [[ "$(uname)" != "Darwin" && -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" && -e "$PROJECT_ROOT/.git" ]]; then
+  SOURCE_PYENVRC="source ~/.pyenvrc"
+  if ! grep "^$SOURCE_PYENVRC$" $RC_FILE > /dev/null; then
+    printf "\n$SOURCE_PYENVRC\n" >> $RC_FILE
+  fi
+
+  eval "$SOURCE_PYENVRC"
+  # $(pyenv init -) produces a function which is broken on bash 3.2 which ships on macOS
+  if [ $(uname) == "Darwin" ]; then
+    unset -f pyenv
+  fi
+fi
+
+export MAKEFLAGS="-j$(nproc)"
+
+PYENV_PYTHON_VERSION=$(cat $ROOT/.python-version)
+if ! pyenv prefix ${PYENV_PYTHON_VERSION} &> /dev/null; then
+  # no pyenv update on mac
+  if [ "$(uname)" == "Linux" ]; then
+    echo "pyenv update ..."
+    pyenv update
+  fi
+  echo "python ${PYENV_PYTHON_VERSION} install ..."
+  CONFIGURE_OPTS="--enable-shared" pyenv install -f ${PYENV_PYTHON_VERSION}
+fi
+eval "$(pyenv init --path)"
+
+echo "update pip"
+pip install pip==23.3
+pip install poetry==1.6.1
+
+poetry config virtualenvs.prefer-active-python true --local
+poetry config virtualenvs.in-project true --local
+
+echo "PYTHONPATH=${PWD}" > $ROOT/.env
+if [[ "$(uname)" == 'Darwin' ]]; then
+  echo "# msgq doesn't work on mac" >> $ROOT/.env
+  echo "export ZMQ=1" >> $ROOT/.env
+  echo "export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES" >> $ROOT/.env
+fi
+
+poetry self add poetry-dotenv-plugin@^0.1.0
+
+echo "pip packages install..."
+poetry install --no-cache --no-root
+pyenv rehash
+
+[ -n "$POETRY_VIRTUALENVS_CREATE" ] && RUN="" || RUN="poetry run"
+
+if [ "$(uname)" != "Darwin" ] && [ -e "$ROOT/.git" ]; then
   echo "pre-commit hooks install..."
-  sudo -u "$SUDO_USER" bash -c "cd '$PROJECT_ROOT' && source .venv/bin/activate && poetry run pre-commit install && poetry run git submodule foreach pre-commit install || true"
+  $RUN pre-commit install
+  $RUN git submodule foreach pre-commit install
 fi
-
-rm -rf "$TMPDIR"

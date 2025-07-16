@@ -107,7 +107,10 @@ function install_ubuntu_focal_requirements() {
 if [ -f "/etc/os-release" ]; then
   source /etc/os-release
   case "$VERSION_CODENAME" in
-    "jammy"|"kinetic"|"lunar"|"noble")
+    "jammy")
+      install_ubuntu_lts_latest_requirements
+      ;;
+    "kinetic")
       install_ubuntu_lts_latest_requirements
       ;;
     "focal")
@@ -120,7 +123,7 @@ if [ -f "/etc/os-release" ]; then
       if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         exit 1
       fi
-      if [ "$UBUNTU_CODENAME" = "jammy" ] || [ "$UBUNTU_CODENAME" = "kinetic" ] || [ "$UBUNTU_CODENAME" = "lunar" ] || [ "$UBUNTU_CODENAME" = "noble" ]; then
+      if [ "$UBUNTU_CODENAME" = "jammy" ] || [ "$UBUNTU_CODENAME" = "kinetic" ]; then
         install_ubuntu_lts_latest_requirements
       else
         install_ubuntu_focal_requirements
