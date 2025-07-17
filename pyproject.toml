@@ -71,6 +71,8 @@ dependencies = [
 
   # ui
   "qrcode",
+
+  "msgpack",
 ]
 
 [project.optional-dependencies]
