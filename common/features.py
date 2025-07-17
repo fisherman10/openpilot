@@ -30,10 +30,7 @@ def _process_feature_string(feature_string_input: str) -> str:
 
 def _get_features_param() -> str:
   """Safely retrieves the feature parameter as a string."""
-  if _get_params().get("FeaturesPackage") == None:
-    return ""
-  else:
-    return _get_params().get("FeaturesPackage").decode()
+  return (_get_params().get("FeaturesPackage") or b"").decode()
 
 def _put_features_param(value: str) -> None:
   """Puts the feature parameter value."""
