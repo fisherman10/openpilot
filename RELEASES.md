@@ -1,6 +1,6 @@
 KA2 Version 0.9.7 (2024-03-03)
 ========================
-* First release note commit
+* First release note commit lalala
 
 Version 0.9.7 (2024-XX-XX)
 ========================
