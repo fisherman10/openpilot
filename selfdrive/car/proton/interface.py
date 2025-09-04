@@ -35,7 +35,7 @@ class CarInterface(CarInterfaceBase):
 
     if candidate == CAR.X50:
       ret.wheelbase = 2.6
-      ret.steerRatio = 14.50
+      ret.steerRatio = 14.40
       ret.centerToFront = ret.wheelbase * 0.44
       tire_stiffness_factor = 0.9871
       ret.mass = 1370. + STD_CARGO_KG
@@ -44,10 +44,10 @@ class CarInterface(CarInterfaceBase):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [600]]  #maximum is 600 only. Any more it will disengage and reengage on its own.
 
       ret.lateralTuning.pid.kpBP = [0., 15., 25., 35., 40.]
-      ret.lateralTuning.pid.kpV = [0.06, 0.13, 0.15, 0.15, 0.15]
+      ret.lateralTuning.pid.kpV = [0.08, 0.14, 0.16, 0.16, 0.16]
       ret.lateralTuning.pid.kiBP = [0., 20., 25., 30., 40.]
-      ret.lateralTuning.pid.kiV = [0.01, 0.01, 0.02, 0.02, 0.02]
-      ret.lateralTuning.pid.kf = 0.0000941000000000
+      ret.lateralTuning.pid.kiV = [0.02, 0.02, 0.02, 0.02, 0.02]
+      ret.lateralTuning.pid.kf = 0.0000940000000000
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
       ret.longitudinalTuning.kpV = [0, 0, 0]
