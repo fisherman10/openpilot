@@ -17,8 +17,8 @@ RES_LEN = 2 # Press resume for 2 frames
 def apply_proton_steer_torque_limits(apply_torque, apply_torque_last, driver_torque, LIMITS):
 
   # limits due to driver torque
-  driver_max_torque = LIMITS.STEER_MAX + driver_torque * 0
-  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 0
+  driver_max_torque = LIMITS.STEER_MAX + driver_torque * 5
+  driver_min_torque = -LIMITS.STEER_MAX + driver_torque * 5
   max_steer_allowed = max(min(LIMITS.STEER_MAX, driver_max_torque), 0)
   min_steer_allowed = min(max(-LIMITS.STEER_MAX, driver_min_torque), 0)
   apply_torque = clip(apply_torque, min_steer_allowed, max_steer_allowed)
@@ -42,7 +42,7 @@ class CarControllerParams():
 
     # for torque limit calculation
 
-    self.STEER_DELTA_UP = 15                      # torque increase per refresh, 0.8s to max
+    self.STEER_DELTA_UP = 12                      # torque increase per refresh, 0.8s to max
     self.STEER_DELTA_DOWN = 30                    # torque decrease per refresh
 
 class CarController():
