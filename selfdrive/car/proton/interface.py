@@ -24,7 +24,7 @@ class CarInterface(CarInterfaceBase):
     ret.enableApgs = False                 # advanced parking guidance system
     ret.enableDsu = False                  # driving support unit
 
-    ret.steerRateCost = 1.5              #steerRateCost lower is more reactive and higher is slower to react. Adjusting steerRateCost will affect how eager the car is to make sudden direction changes. Lower cost == more eager
+    ret.steerRateCost = 2.0              #steerRateCost lower is more reactive and higher is slower to react. Adjusting steerRateCost will affect how eager the car is to make sudden direction changes. Lower cost == more eager
     ret.steerLimitTimer = 0.001            # time before steerLimitAlert is issued
     ret.steerControlType = car.CarParams.SteerControlType.torque
     ret.steerActuatorDelay = 0.01         # Steering wheel actuator delay in seconds
@@ -44,10 +44,10 @@ class CarInterface(CarInterfaceBase):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [600]]  #maximum is 600 only. Any more it will disengage and reengage on its own.
 
       ret.lateralTuning.pid.kpBP = [0., 15., 25., 35., 40.]
-      ret.lateralTuning.pid.kpV = [0.08, 0.10, 0.14, 0.15, 0.15]
+      ret.lateralTuning.pid.kpV = [0.04, 0.08, 0.10, 0.12, 0.14]
       ret.lateralTuning.pid.kiBP = [0., 20., 25., 30., 40.]
       ret.lateralTuning.pid.kiV = [0.005, 0.005, 0.005, 0.005, 0.005]
-      ret.lateralTuning.pid.kf = 0.00009140000000000
+      ret.lateralTuning.pid.kf = 0.00009145000000000
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
       ret.longitudinalTuning.kpV = [0, 0, 0]
