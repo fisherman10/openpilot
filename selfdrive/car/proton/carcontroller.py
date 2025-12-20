@@ -42,7 +42,7 @@ class CarControllerParams():
 
     # for torque limit calculation
 
-    self.STEER_DELTA_UP = 18                      # torque increase per refresh, 0.8s to max
+    self.STEER_DELTA_UP = 20                      # torque increase per refresh, 0.8s to max
     self.STEER_DELTA_DOWN = 12                    # torque decrease per refresh
 
 class CarController():
